@@ -21,14 +21,21 @@ Open the file and add this `CheckPassword` operation after the existing `CheckSy
 ```json
 "CheckPassword": {
   "Parameters": [
-    { "Address": "" },
-    { "Port": "" },
-    { "AccountUserName": "" },
-    { "AccountPassword": "" }
+    { "Address": { "Type": "String", "Required": true } },
+    { "Port": { "Type": "Integer", "Required": false, "DefaultValue": 22 } },
+    { "AccountUserName": { "Type": "String", "Required": true } },
+    { "AccountPassword": { "Type": "Secret", "Required": true } }
   ],
   "Do": [
-    { "Connect": { "Address": "%Address%", "Port": "%Port%", "UserName": "%AccountUserName%", "Password": "%AccountPassword%", "RequestTerminal": true } },
-    { "Disconnect": {} }
+    { "Connect": {
+        "ConnectionObjectName": "SshConn",
+        "Type": "Ssh",
+        "NetworkAddress": "%Address%",
+        "Port": "%Port%",
+        "Login": "%AccountUserName%",
+        "Password": "%AccountPassword%"
+    } },
+    { "Disconnect": { "ConnectionObjectName": "SshConn" } }
   ]
 }
 ```

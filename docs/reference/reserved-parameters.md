@@ -173,13 +173,10 @@ These parameters are used for SSH-key check, change, discovery, and related work
 
 These are used by `UpdateDependentSystem` and related dependency-aware workflows.
 
-> Older wiki content may use shorter dependency names such as `DependentUsername` and `DependentPassword`. This reference uses the more explicit `DependentAccount*` naming shown in current custom-platform guidance.
-
 | Parameter | Type | Auto-Source | What Admin Configures |
 | --- | --- | --- | --- |
-| `DependentAccountUserName` | String | `DependentAccount.Name` | Dependent account name |
-| `DependentAccountPassword` | Secret | `DependentAccount.Password` | Managed by SPP from the vault |
-| `DependentNewPassword` | Secret | SPP-generated password for the dependent update | N/A |
+| `DependentUsername` | String | `DependentAccount.Name` | Dependent account name |
+| `DependentPassword` | Secret | SPP-generated password for the dependent update | N/A |
 | `DependentCommand` | String | `Profile.ChangeSchedule.CustomDependencyCommands` | Custom Dependency configuration in the change profile |
 | `DependentAltUsername` | String | `Account.AltLoginName` | Alternate Login Name on the dependent account |
 | `DependentAccountType` | String | `DependencyRelationship.Type` | Dependency type when accounts are linked |
