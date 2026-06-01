@@ -4,7 +4,7 @@
 
 Operations are the named entry points in a custom platform script that SPP invokes when performing specific tasks. Each operation you include in your script tells SPP what your platform can do — SPP automatically derives [feature flags](../concepts/feature-flags.md) from the operations present.
 
-This page documents all 19 available operations across 8 categories.
+This page documents all 22 operations available for custom platform scripts.
 
 ## Quick Reference
 
@@ -395,7 +395,7 @@ Retrieves the SSH host key fingerprint of the target system during asset creatio
 
 **Feature flags derived:** `SshHostKeyFl`
 
-**Return value:** The host key fingerprint string. Uses the built-in `DiscoverSshHostKey` command.
+**Return value:** The operation returns a boolean `PlatformOperationResult(true/false)`. The discovered host key itself is stored in the variable named by `HostKeyVariableName` on the `DiscoverSshHostKey` command.
 
 **Example:**
 
@@ -407,7 +407,7 @@ Retrieves the SSH host key fingerprint of the target system during asset creatio
     { "Address": { "Type": "String", "Required": true } }
   ],
   "Do": [
-    { "DiscoverSshHostKey": { "NetworkAddress": "%Address%", "Port": "%Port%", "Timeout": "%Timeout%" } },
+    { "DiscoverSshHostKey": { "HostKeyVariableName": "DiscoveredKey", "NetworkAddress": "%Address%", "Port": "%Port%", "Timeout": "%Timeout%" } },
     { "Return": { "Value": true } }
   ]
 }
@@ -421,15 +421,9 @@ Retrieves the SSH host key fingerprint of the target system during asset creatio
 
 ### RetrieveSshHostKey
 
-Retrieves the SSH host key from a system that is already configured as an asset.
-
-**Triggered by:** Retrieve SSH Host Key task, scheduled host key refresh.
-
-**Required parameters:** Same as `DiscoverSshHostKey`.
+> ⚠️ **Not supported for custom platforms.** The Scriptable engine does not allow custom platform scripts to implement this operation. Use `DiscoverSshHostKey` instead.
 
 **Feature flags derived:** `SshHostKeyFl` (same flag as `DiscoverSshHostKey`)
-
-**Implementation:** Typically identical to `DiscoverSshHostKey`. Many scripts share the same implementation for both.
 
 ### DiscoverAuthorizedKeys
 
