@@ -48,14 +48,16 @@ The following operation categories are available for custom platforms. Detailed 
 | --- | --- |
 | Connection | `CheckSystem` |
 | Password | `CheckPassword`, `ChangePassword` |
-| SSH Keys | `CheckSshKey`, `ChangeSshKey`, `DiscoverSshHostKey`, `RetrieveSshHostKey`, `DiscoverAuthorizedKeys`, `RemoveAuthorizedKey` |
-| Discovery | `DiscoverAccounts`, `DiscoverServices` |
+| SSH Keys | `CheckSshKey`, `ChangeSshKey`, `DiscoverSshHostKey`, `DiscoverAuthorizedKeys`, `RemoveAuthorizedKey` |
+| Discovery | `DiscoverAccounts`, `DiscoverServices`, `DiscoverAssets` |
 | JIT Access | `ElevateAccount`, `DemoteAccount`, `EnableAccount`, `DisableAccount` |
 | Dependencies | `UpdateDependentSystem` |
 | API Keys | `CheckApiKey`, `ChangeApiKey` |
 | Files | `CheckFile`, `ChangeFile` |
+| Admin | `CreateAdminUser` |
 
-All operations listed above are fully supported for custom platforms.
+> [!NOTE]
+> `RetrieveSshHostKey` and `CheckHostKey` are not supported for custom platforms.
 
 ## 5. Key Concepts
 
@@ -63,7 +65,7 @@ All operations listed above are fully supported for custom platforms.
 | --- | --- |
 | Operations | Named entry points in your script, such as `CheckPassword` or `ChangePassword`. |
 | Do blocks | The sequence of commands that runs for an operation. |
-| Reserved parameters | Parameters with special names that SPP fills automatically, such as `AccountPassword` or `AssetAddress`. |
+| Reserved parameters | Parameters with special names that SPP fills automatically, such as `AccountPassword` or `Address`. |
 | Custom parameters | Parameters you define for asset-specific or platform-specific configuration. |
 | Commands | Individual instructions inside a `Do` block, such as `Connect`, `Send`, or `Request`. |
 | Imports | Built-in function libraries you can reference to reuse common scripting logic across platforms. |

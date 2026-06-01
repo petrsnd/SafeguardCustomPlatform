@@ -30,7 +30,11 @@ Upload your script to SPP using either method:
 
 **PowerShell (recommended for development):**
 ```powershell
-Import-SafeguardCustomPlatformScript -FilePath .\MyPlatform.json
+# Create a new custom platform with a script
+New-SafeguardCustomPlatform -Name "MyPlatform" -ScriptFile .\MyPlatform.json
+
+# Or update an existing platform's script
+Import-SafeguardCustomPlatformScript -PlatformToEdit "MyPlatform" -ScriptFile .\MyPlatform.json
 ```
 
 **Web UI:**
