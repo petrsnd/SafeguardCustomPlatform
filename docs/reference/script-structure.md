@@ -141,8 +141,8 @@ Each parameter definition is a single-key object in the `Parameters` array:
 
 | Property | Required | Description |
 | --- | --- | --- |
-| `Type` | Yes | Data type: `String`, `Integer`, `Secret`, or `Boolean` |
-| `Required` | No | Whether SPP must supply a value. Defaults to `false`. |
+| `Type` | Yes | Data type: `String`, `Integer`, `Float`, `Boolean`, `Secret`, `Array`, `Object`, `Email`, or `Null` |
+| `Required` | No | Whether SPP must supply a value. Defaults to `true`. |
 | `DefaultValue` | No | Value used when SPP does not supply one. |
 | `Description` | No | Human-readable description (shown in SPP UI for custom parameters). |
 
@@ -150,10 +150,15 @@ Each parameter definition is a single-key object in the `Parameters` array:
 
 | Type | JSON representation | Notes |
 | --- | --- | --- |
-| `String` | `"value"` | General text. |
+| `Null` | `null` | Explicitly empty value. |
+| `Boolean` | `true` / `false` | Flags and toggles. |
 | `Integer` | `30` | Whole numbers (often used for timeouts and ports). |
+| `Float` | `3.14` | Floating-point numbers. |
+| `String` | `"value"` | General text. |
+| `Array` | `[...]` | Ordered collection of values. |
+| `Object` | `{...}` | Key-value structure. |
 | `Secret` | `"value"` | Treated as sensitive — masked in logs. Use for passwords, keys, tokens. |
-| `Boolean` | `true` / `false` | Flags and toggles. Case-insensitive in scripts (`boolean` also works). |
+| `Email` | `"user@example.com"` | Email address string. |
 
 ### Reserved vs Custom Parameters
 
@@ -330,7 +335,7 @@ Here is a complete script showing all structural elements together:
 
 1. **JSON must be valid.** Use a JSON validator during development. SPP rejects scripts with syntax errors on upload.
 2. **Operations you include determine platform capabilities.** SPP derives feature flags automatically — you never set them manually.
-3. **Parameter names are case-sensitive.** `AccountUserName` and `accountusername` are different parameters.
+3. **Variable names are case-insensitive.** `AccountUserName` and `accountusername` resolve to the same variable. However, parameter *type names* (like `String`, `Secret`) are case-sensitive in the JSON definition.
 4. **`Secret` parameters are masked in logs.** Always use type `Secret` for passwords, keys, and tokens.
 5. **Order matters in `Do` blocks.** Commands execute sequentially, top to bottom.
 6. **Functions are defined once, called many times.** Extract repeated logic (login flows, pagination) into functions.
