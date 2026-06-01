@@ -27,7 +27,7 @@ git checkout -b my-change
 - Use meaningful parameter names and sensible defaults.
 - Use the `Comment` command to explain non-obvious logic.
 - Test against a real SPP instance before submitting.
-- During development, validate locally with `Test-SafeguardCustomPlatformScript` and use `Import-SafeguardCustomPlatformScript` when you need to upload a revised script to SPP. See [docs/getting-started/testing-and-debugging.md](docs/getting-started/testing-and-debugging.md).
+- During development, validate locally with `Test-SafeguardCustomPlatformScript` and use `Import-SafeguardCustomPlatformScript` when you need to upload a revised script to SPP. See [docs/guides/testing-and-debugging.md](docs/guides/testing-and-debugging.md).
 
 ## Script Conventions
 

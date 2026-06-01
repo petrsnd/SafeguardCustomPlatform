@@ -18,7 +18,7 @@ This is the right pattern when the target has no REST API and the supported work
 Before you start, make sure you have:
 
 - A target web application with an HTML login form and a password-change page.
-- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](development-workflow.md).
+- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](../guides/development-workflow.md).
 - Browser developer tools so you can inspect field names and submit URLs.
 - Basic familiarity with JSON, HTML forms, and HTTP redirects.
 
@@ -418,7 +418,7 @@ Test-SafeguardAssetAccountPassword "portal.example.com" "testuser" -ExtendedLogg
 
 `Test-SafeguardAssetAccountPassword` runs `CheckPassword` — it logs in as the account and confirms the stored credentials are correct. There is no Test Connection (CheckSystem) for this platform because there is no service account.
 
-For the complete development loop and log review, see [Development Workflow](development-workflow.md).
+For the complete development loop and log review, see [Development Workflow](../guides/development-workflow.md).
 
 ## Key Differences from REST API Scripts
 

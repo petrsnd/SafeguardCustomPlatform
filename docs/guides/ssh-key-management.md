@@ -88,7 +88,7 @@ Important consequences:
 
 - `ChangeSshKey` is normally paired with `CheckSshKey`, but `SshKeyFl` is derived from `CheckSshKey`.
 - `RemoveAuthorizedKey` belongs with key discovery workflows, but `DiscoverSshKeyFl` is derived from `DiscoverAuthorizedKeys`.
-- You do not hand-edit these flags in the JSON; they are inferred from the script content. See [Feature Flags](feature-flags.md).
+- You do not hand-edit these flags in the JSON; they are inferred from the script content. See [Feature Flags](../concepts/feature-flags.md).
 
 ## Recommended implementation pattern
 

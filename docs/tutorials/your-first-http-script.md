@@ -19,7 +19,7 @@ This is intentionally small. It is the quickest way to get from zero to a workin
 Before you start, make sure you have:
 
 - A target system with a REST API that supports authentication such as Basic Auth.
-- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](development-workflow.md).
+- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](../guides/development-workflow.md).
 - Basic familiarity with JSON and REST APIs.
 
 ## Step 1: Create the Script Skeleton

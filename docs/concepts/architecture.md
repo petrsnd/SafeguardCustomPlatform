@@ -73,7 +73,7 @@ The following operation categories are available for custom platforms. Detailed 
 
 ## 6. Next Steps
 
-- [Your First SSH Script](your-first-ssh-script.md)
-- [Your First HTTP Script](your-first-http-script.md)
-- [Development Workflow](development-workflow.md)
+- [Your First SSH Script](../tutorials/your-first-ssh-script.md)
+- [Your First HTTP Script](../tutorials/your-first-http-script.md)
+- [Development Workflow](../guides/development-workflow.md)
 - [Script Structure Reference](../reference/script-structure.md)

@@ -19,7 +19,7 @@ This is intentionally small. It is the quickest way to get from zero to a workin
 Before you start, make sure you have:
 
 - A Linux target with SSH access. A VM or container is fine.
-- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](development-workflow.md).
+- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](../guides/development-workflow.md).
 - Basic familiarity with JSON.
 
 ## Step 1: Create the Script Skeleton

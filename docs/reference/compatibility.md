@@ -61,5 +61,5 @@ This matrix is based on the current repository documentation, especially the [Op
 - [Operations Reference](operations.md)
 - [Platform Feature Flags](../concepts/feature-flags.md)
 - [Script Structure Reference](script-structure.md)
-- [System Import Libraries Reference](reference/imports.md)
+- [System Import Libraries Reference](imports.md)
 - [Testing and Debugging](../guides/testing-and-debugging.md)

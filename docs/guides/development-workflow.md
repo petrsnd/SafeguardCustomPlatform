@@ -223,6 +223,6 @@ Change one thing at a time so each test result is easy to interpret.
 
 ## Next Steps
 
-- [Your First SSH Script](your-first-ssh-script.md) — Build a working SSH script step by step.
-- [Your First HTTP Script](your-first-http-script.md) — Build a working HTTP script step by step.
+- [Your First SSH Script](../tutorials/your-first-ssh-script.md) — Build a working SSH script step by step.
+- [Your First HTTP Script](../tutorials/your-first-http-script.md) — Build a working HTTP script step by step.
 - [Testing and Debugging](testing-and-debugging.md) — Deep dive into debugging techniques.

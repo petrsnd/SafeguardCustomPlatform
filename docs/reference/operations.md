@@ -15,7 +15,7 @@ This page documents all 22 operations available for custom platform scripts.
 | [Password](#changepassword) | `ChangePassword` | Managed account (+ service account for SSH) | `AccountPasswordFl` |
 | [SSH Keys](#checksshkey) | `CheckSshKey` | Managed account (+ service account) | `SshKeyFl` |
 | [SSH Keys](#changesshkey) | `ChangeSshKey` | Managed account (+ service account) | `SshKeyFl` |
-| [SSH Keys](#discoversshHostkey) | `DiscoverSshHostKey` | None (asset-level) | `SshHostKeyFl` |
+| [SSH Keys](#discoversshhostkey) | `DiscoverSshHostKey` | None (asset-level) | `SshTransportFl` |
 | [SSH Keys](#retrievesshhostkey) | `RetrieveSshHostKey` | None (asset-level) | `SshHostKeyFl` |
 
 | [SSH Keys](#discoverauthorizedkeys) | `DiscoverAuthorizedKeys` | Managed account (+ service account) | `DiscoverSshKeyFl` |

@@ -68,7 +68,7 @@ SPP derives dependency-related feature flags from the script content:
 | `DependentSystemFl` | Declare `UpdateDependentSystem` | Tells SPP the platform supports dependent-system updates. |
 | `CustomDependencyFl` | Declare `DependentCommand` inside `UpdateDependentSystem` | Tells SPP the platform can receive a Change Profile custom dependency command. |
 
-For the exact mapping, see [Platform Feature Flags](feature-flags.md) and [Operations Reference](../reference/operations.md#updatedependentsystem).
+For the exact mapping, see [Platform Feature Flags](../concepts/feature-flags.md) and [Operations Reference](../reference/operations.md#updatedependentsystem).
 
 ## Reserved parameters you will use
 
