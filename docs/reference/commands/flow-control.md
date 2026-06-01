@@ -79,7 +79,7 @@ From `samples/http/wordpress/WordPressHttp.json`:
 
 ## `Switch` / `Case` / `Default`
 
-Use `Switch` when one value needs to be matched against multiple cases. String `CaseValue` entries support either literal equality or regular-expression matching.
+Use `Switch` when one value needs to be matched against multiple cases. For string comparisons, the engine first attempts `Regex.IsMatch` against the `CaseValue`; if the pattern is invalid regex (throws `ArgumentException`), it falls back to case-sensitive literal equality.
 
 ### Syntax
 
@@ -200,7 +200,7 @@ From `samples/http/wordpress/WordPressHttp.json`:
 
 ## `While` (`For`)
 
-Use `For` as a while-style loop by supplying `Condition` and `Body` and omitting `Before` and `End`. The engine enforces a maximum-iteration guard; if `MaxIterations` is omitted, the current default limit is 1,000,000 iterations.
+Use `For` as a while-style loop by supplying `Condition` and `Body`. `Before` and `End` are optional expressions for initialization and iteration steps. `Condition` is required — the engine raises a validation error if it is omitted. If `MaxIterations` is omitted, the current default limit is 1,000,000 iterations.
 
 ### Syntax
 
@@ -230,7 +230,7 @@ Use `For` as a while-style loop by supplying `Condition` and `Body` and omitting
 | Name | Type | Required? | Description |
 | --- | --- | :---: | --- |
 | `Before` | Expression | No | Expression to run once before the loop starts. |
-| `Condition` | Boolean expression | No | Loop guard. When omitted, the loop continues until `Break`, `Return`, or `MaxIterations` stops it. |
+| `Condition` | Boolean expression | Yes | Loop guard. The loop runs while this evaluates to true. |
 | `End` | Expression | No | Expression to run after each iteration. |
 | `MaxIterations` | Integer expression | No | Safety cap that overrides the default maximum loop count. |
 | `Body` | Operation block | Yes | Commands to run for each iteration. |

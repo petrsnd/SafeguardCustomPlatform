@@ -68,18 +68,20 @@ Because discovery only reads data (no interactive prompts), it works well with `
     },
     {
       "ForEach": {
-        "Item": "acct",
-        "In": "%{ Result.Stdout.Split('\\n') }%",
-        "Do": [
-          {
-            "Condition": {
-              "If": "acct != ''",
-              "Then": { "Do": [
-                { "WriteDiscoveredAccount": { "AccountName": "%acct%" } }
-              ] }
+        "CollectionName": "%{ Result.Stdout.Split('\\n') }%",
+        "ElementName": "acct",
+        "Body": {
+          "Do": [
+            {
+              "Condition": {
+                "If": "acct != ''",
+                "Then": { "Do": [
+                  { "WriteDiscoveredAccount": { "AccountName": "%acct%" } }
+                ] }
+              }
             }
-          }
-        ]
+          ]
+        }
       }
     },
     {
