@@ -496,7 +496,12 @@ Validation is your first checkpoint. If `Test-SafeguardCustomPlatformScript` fai
 Once the platform exists, create a test asset and a test account:
 
 ```powershell
-New-SafeguardCustomPlatformAsset "My First SSH Platform" "10.0.0.1" -ServiceAccountCredentialType Password -ServiceAccountName "root"
+$svcPassword = Read-Host -AsSecureString "Enter service account password for root"
+New-SafeguardCustomPlatformAsset "My First SSH Platform" "10.0.0.1" `
+    -ServiceAccountCredentialType Password `
+    -ServiceAccountName "root" `
+    -ServiceAccountPassword $svcPassword `
+    -AcceptSshHostKey
 New-SafeguardAssetAccount "10.0.0.1" "testuser"
 Set-SafeguardAssetAccountPassword -AssetToUse "10.0.0.1" -AccountToUse "testuser"
 ```
@@ -504,6 +509,8 @@ Set-SafeguardAssetAccountPassword -AssetToUse "10.0.0.1" -AccountToUse "testuser
 In this example:
 
 - The asset uses `root` as the service account for `CheckSystem` and `ChangePassword`.
+- `-ServiceAccountPassword` supplies the service account password (SPP will prompt interactively if omitted).
+- `-AcceptSshHostKey` automatically discovers and accepts the SSH host key during asset creation. Without this, `Test-SafeguardAsset` will fail with "SSH host key has not been accepted."
 - `testuser` is the managed account you will verify with `CheckPassword` and rotate with `ChangePassword`.
 - `Set-SafeguardAssetAccountPassword` securely prompts you for the managed account password.
 

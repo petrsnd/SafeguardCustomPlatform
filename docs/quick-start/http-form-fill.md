@@ -102,7 +102,11 @@ Form-fill workflows almost always require cookies for session tracking. The `{ "
 ### 5. Upload to SPP
 
 ```powershell
-Import-SafeguardCustomPlatformScript -FilePath .\MyWebAppFormFill.json
+# Create a new custom platform with the script
+New-SafeguardCustomPlatform -Name "MyWebAppFormFill" -ScriptFile .\MyWebAppFormFill.json
+
+# To update an existing platform's script later:
+# Import-SafeguardCustomPlatformScript -PlatformToEdit "MyWebAppFormFill" -ScriptFile .\MyWebAppFormFill.json
 ```
 
 ### 6. Create an Asset
@@ -115,7 +119,7 @@ Import-SafeguardCustomPlatformScript -FilePath .\MyWebAppFormFill.json
 ### 7. Test
 
 ```powershell
-Test-SafeguardAssetConnection -AssetToUse "MyWebApp" -ExtendedLogging
+Test-SafeguardAsset -AssetToTest "MyWebApp" -ExtendedLogging
 ```
 
 If it reports success, SPP can log in to your web application.

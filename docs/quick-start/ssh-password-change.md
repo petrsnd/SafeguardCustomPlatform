@@ -38,7 +38,11 @@ This connects with the managed account's credentials. If the connection succeeds
 ### 3. Upload to SPP
 
 ```powershell
-Import-SafeguardCustomPlatformScript -FilePath .\MyLinuxCheck.json
+# Create a new custom platform with the script
+New-SafeguardCustomPlatform -Name "MyLinuxCheck" -ScriptFile .\MyLinuxCheck.json
+
+# To update an existing platform's script later:
+# Import-SafeguardCustomPlatformScript -PlatformToEdit "MyLinuxCheck" -ScriptFile .\MyLinuxCheck.json
 ```
 
 ### 4. Create an Asset

@@ -45,7 +45,11 @@ Replace `/api/v1/health` with your target's actual endpoint.
 ### 3. Upload to SPP
 
 ```powershell
-Import-SafeguardCustomPlatformScript -FilePath .\MyApiCheck.json
+# Create a new custom platform with the script
+New-SafeguardCustomPlatform -Name "MyApiCheck" -ScriptFile .\MyApiCheck.json
+
+# To update an existing platform's script later:
+# Import-SafeguardCustomPlatformScript -PlatformToEdit "MyApiCheck" -ScriptFile .\MyApiCheck.json
 ```
 
 ### 4. Create an Asset
@@ -58,7 +62,7 @@ Import-SafeguardCustomPlatformScript -FilePath .\MyApiCheck.json
 ### 5. Test
 
 ```powershell
-Test-SafeguardAssetConnection -AssetToUse "MyApiServer" -ExtendedLogging
+Test-SafeguardAsset -AssetToTest "MyApiServer" -ExtendedLogging
 ```
 
 If it reports success, SPP can reach your API.

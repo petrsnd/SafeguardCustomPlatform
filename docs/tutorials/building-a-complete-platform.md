@@ -213,10 +213,12 @@ The `Percent` values give SPP a progress bar. The `Message` `Name` values are st
 Upload and run through all operations:
 
 ```powershell
-Import-SafeguardCustomPlatformScript -FilePath .\MyCompletePlatform.json
+# Create the platform (first time) or update the script (subsequent times)
+New-SafeguardCustomPlatform -Name "MyCompletePlatform" -ScriptFile .\MyCompletePlatform.json
+# Import-SafeguardCustomPlatformScript -PlatformToEdit "MyCompletePlatform" -ScriptFile .\MyCompletePlatform.json
 
 # CheckSystem
-Test-SafeguardAssetConnection -AssetToUse "TestHost" -ExtendedLogging
+Test-SafeguardAsset -AssetToTest "TestHost" -ExtendedLogging
 
 # CheckPassword
 Test-SafeguardAssetAccountPassword -AssetToUse "TestHost" -AccountToUse "testuser" -ExtendedLogging

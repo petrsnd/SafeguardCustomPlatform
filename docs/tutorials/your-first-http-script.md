@@ -516,12 +516,16 @@ If validation fails, fix the JSON before you upload anything.
 Once the platform exists, create a test asset and a test account:
 
 ```powershell
-New-SafeguardCustomPlatformAsset "My First HTTP Platform" "api.example.com" -ServiceAccountCredentialType Password -ServiceAccountName "admin"
+$svcPassword = Read-Host -AsSecureString "Enter service account password for admin"
+New-SafeguardCustomPlatformAsset "My First HTTP Platform" "api.example.com" `
+    -ServiceAccountCredentialType Password `
+    -ServiceAccountName "admin" `
+    -ServiceAccountPassword $svcPassword
 New-SafeguardAssetAccount "api.example.com" "testuser"
 Set-SafeguardAssetAccountPassword -AssetToUse "api.example.com" -AccountToUse "testuser"
 ```
 
-In this example, `admin` is the service account used by `CheckSystem` and `ChangePassword`, and `testuser` is the managed account validated by `CheckPassword` and updated by `ChangePassword`.
+In this example, `admin` is the service account used by `CheckSystem` and `ChangePassword`, and `testuser` is the managed account validated by `CheckPassword` and updated by `ChangePassword`. The `-ServiceAccountPassword` parameter supplies the credential securely (SPP will prompt interactively if omitted).
 
 ## Step 9: Test It
 
