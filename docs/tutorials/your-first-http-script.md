@@ -117,7 +117,7 @@ This first example assumes HTTPS so you can see the simplest possible form. In t
     "RequestObjectName": "ApiRequest",
     "ResponseObjectName": "ApiResponse",
     "Verb": "GET",
-    "Url": "/api/status",
+    "Url": "/users",
     "Content": {
       "ContentType": "application/json"
     }
@@ -177,7 +177,7 @@ Here is the full `Do` block assembled together. This version uses `UseSsl` so th
       "RequestObjectName": "ApiRequest",
       "ResponseObjectName": "ApiResponse",
       "Verb": "GET",
-      "Url": "/api/status",
+      "Url": "/users",
       "Content": {
         "ContentType": "application/json"
       }
@@ -388,7 +388,7 @@ Here is the full script with all three operations in one file:
           "RequestObjectName": "ApiRequest",
           "ResponseObjectName": "ApiResponse",
           "Verb": "GET",
-          "Url": "/api/status",
+          "Url": "/users",
           "Content": {
             "ContentType": "application/json"
           }
@@ -574,7 +574,7 @@ During development, always run tests with `-ExtendedLogging` and review `Get-Saf
 
 The example uses generic placeholder endpoints. To make it work with a real target:
 
-- Change `/api/status`, `/api/users/me`, and `/api/users/%AccountUserName%/password` to the actual endpoints your API exposes.
+- Change `/users`, `/api/users/me`, and `/api/users/%AccountUserName%/password` to the actual endpoints your API exposes.
 - Switch the authentication type if needed, such as Bearer tokens or OAuth2. See the [HTTP Platforms Guide](../guides/http-platforms.md).
 - Add custom parameters for API-specific values such as a base path, tenant ID, or API version.
 - Adjust the password-change verb or request body if your API uses `POST`, expects the old password, or wraps the new password in a different JSON structure.

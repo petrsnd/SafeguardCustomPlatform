@@ -189,7 +189,7 @@ The `Catch` block runs when any command in the `Try` block throws — whether fr
 For operations that take time (connecting, changing passwords, running discovery), status messages keep the SPP UI informed about progress:
 
 ```json
-{ "Status": { "Type": "Changing", "Percent": 10, "Message": { "Name": "ConnectingToHost", "Parameters": ["%Address%"] } } }
+{ "Status": { "Type": "Changing", "Percent": 10, "Message": { "Name": "AssetConnecting", "Parameters": ["%Address%"] } } }
 ```
 
 Add these at key points in your operations:
@@ -197,11 +197,10 @@ Add these at key points in your operations:
 ```json
 "ChangePassword": {
   "Do": [
-    { "Status": { "Type": "Changing", "Percent": 10, "Message": { "Name": "ConnectingToHost", "Parameters": ["%Address%"] } } },
+    { "Status": { "Type": "Changing", "Percent": 10, "Message": { "Name": "AssetConnecting", "Parameters": ["%Address%"] } } },
     { "Function": { "Name": "LoginSsh", "Parameters": ["%FuncUserName%", "%FuncPassword%"] } },
     { "Status": { "Type": "Changing", "Percent": 40, "Message": { "Name": "ChangingPassword", "Parameters": ["%AccountUserName%"] } } },
     ...password change logic...,
-    { "Status": { "Type": "Changing", "Percent": 90, "Message": { "Name": "DisconnectingFromHost" } } },
     { "Disconnect": { "ConnectionObjectName": "SshConnection" } },
     { "Return": { "Value": true } }
   ]
