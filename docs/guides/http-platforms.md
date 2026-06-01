@@ -159,7 +159,7 @@ A common pattern is:
   {
     "SetItem": {
       "Name": "AccessToken",
-      "Type": "secret",
+      "IsSecret": true,
       "Value": "%{TokenJson.access_token}%"
     }
   },

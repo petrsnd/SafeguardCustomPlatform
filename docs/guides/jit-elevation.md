@@ -377,14 +377,24 @@ HTTP-backed JIT platforms are usually the cleanest option when the target expose
       { "BaseAddress": { "Address": "https://%Address%" } },
       { "NewHttpRequest": { "ObjectName": "TokenRequest" } },
       {
+        "SetItem": {
+          "Name": "TokenBody",
+          "Value": {
+            "username": "%FuncUserName%",
+            "password": "%FuncPassword%"
+          },
+          "IsSecret": true
+        }
+      },
+      {
         "Request": {
           "Verb": "POST",
           "Url": "/api/auth/token",
           "RequestObjectName": "TokenRequest",
           "ResponseObjectName": "TokenResponse",
           "Content": {
-            "ContentType": "application/json",
-            "Body": "{\"username\":\"%FuncUserName%\",\"password\":\"%FuncPassword%\"}"
+            "ContentObjectName": "TokenBody",
+            "ContentType": "application/json"
           }
         }
       },

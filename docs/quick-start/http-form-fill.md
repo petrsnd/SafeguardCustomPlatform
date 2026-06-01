@@ -29,7 +29,6 @@ Replace the `CheckSystem` operation with one that fetches the login page, extrac
 "CheckSystem": {
   "Do": [
     { "BaseAddress": { "Address": "https://%Address%" } },
-    { "Cookies": { "Enabled": true } },
     { "NewHttpRequest": { "ObjectName": "LoginPageReq" } },
     { "Request": {
         "Verb": "Get",
@@ -58,24 +57,26 @@ Replace the `CheckSystem` operation with one that fetches the login page, extrac
         "FormObjectName": "LoginForm",
         "InputName": "password",
         "Value": "%FuncPassword%",
-        "ContainsSecret": true
+        "IsSecret": true
     } },
     { "NewHttpRequest": { "ObjectName": "LoginPostReq" } },
     { "Request": {
         "Verb": "Post",
         "Url": "%LoginForm.Action%",
-        "Body": "%LoginForm%",
-        "ContentType": "application/x-www-form-urlencoded",
         "RequestObjectName": "LoginPostReq",
-        "ResponseObjectName": "LoginPostResp"
+        "ResponseObjectName": "LoginPostResp",
+        "Content": {
+          "ContentObjectName": "LoginForm",
+          "ContentType": "application/x-www-form-urlencoded"
+        }
     } },
     {
       "Condition": {
-        "If": "Response.StatusCode == 200 || Response.StatusCode == 302",
+        "If": "LoginPostResp.StatusCode == 200 || LoginPostResp.StatusCode == 302",
         "Then": { "Do": [{ "Return": { "Value": true } }] }
       }
     },
-    { "Throw": { "Message": "Login failed: HTTP %Response.StatusCode%" } }
+    { "Throw": { "Message": "Login failed: HTTP %{LoginPostResp.StatusCode}%" } }
   ]
 }
 ```
@@ -95,9 +96,9 @@ You'll likely need to adjust:
 > "XPath": "//form[@id='login-form']"
 > ```
 
-### 4. Enable Cookies
+### 4. Cookie Persistence
 
-Form-fill workflows almost always require cookies for session tracking. The `{ "Cookies": { "Enabled": true } }` step at the top handles this. Cookies will persist across requests within the same operation.
+Cookies persist by default across requests within the same operation (`PersistCookies: true` is the default on `Request`). No extra step is needed for session tracking.
 
 ### 5. Upload to SPP
 
@@ -128,8 +129,8 @@ If it reports success, SPP can log in to your web application.
 
 - **`ExtractFormData`** parses HTML and extracts all `<input>` fields, including hidden CSRF tokens
 - **`SetFormValue`** updates a field before submission — hidden fields are preserved automatically
-- **`Cookies`** must be enabled so session cookies flow between requests
-- **`ContainsSecret: true`** on password fields prevents credentials from appearing in logs
+- Cookies persist by default (`Request.PersistCookies` defaults to `true`), so session cookies flow between requests automatically
+- **`IsSecret: true`** on password fields prevents credentials from appearing in logs
 - The form's `Action` attribute is available as `%LoginForm.Action%` for the submit URL
 
 ## Next Steps

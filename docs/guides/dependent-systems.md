@@ -267,22 +267,36 @@ This example pushes the new password into a downstream configuration API.
       { "NewHttpRequest": { "ObjectName": "UpdateReq" } },
       {
         "Headers": {
-          "ObjectName": "UpdateReq",
-          "Headers": [
-            { "Name": "X-Admin-User", "Value": "%FuncUserName%" },
-            { "Name": "X-Admin-Secret", "Value": "%FuncPassword%" }
-          ]
+          "RequestObjectName": "UpdateReq",
+          "AddHeaders": {
+            "X-Admin-User": "%FuncUserName%",
+            "X-Admin-Secret": "%FuncPassword%"
+          }
+        }
+      },
+      {
+        "SetItem": {
+          "Name": "UpdateBody",
+          "Value": {
+            "username": "%DependentAccountUserName%",
+            "altUsername": "%DependentAltUsername%",
+            "accountType": "%DependentAccountType%",
+            "namespace": "%DependentUserNamespace%",
+            "newPassword": "%DependentNewPassword%"
+          },
+          "IsSecret": true
         }
       },
       {
         "Request": {
           "Verb": "Put",
           "Url": "/api/dependent-accounts/%DependentAccountUserName%",
+          "SubstitutionInUrl": true,
           "RequestObjectName": "UpdateReq",
           "ResponseObjectName": "UpdateResp",
           "Content": {
-            "ContentType": "application/json",
-            "Body": "{\"username\":\"%DependentAccountUserName%\",\"altUsername\":\"%DependentAltUsername%\",\"accountType\":\"%DependentAccountType%\",\"namespace\":\"%DependentUserNamespace%\",\"newPassword\":\"%DependentNewPassword%\"}"
+            "ContentObjectName": "UpdateBody",
+            "ContentType": "application/json"
           }
         }
       },

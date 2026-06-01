@@ -21,19 +21,19 @@ Open the file and update the `CheckSystem` operation to hit your API's health or
 ```json
 "CheckSystem": {
   "Parameters": [
-    { "Address": "" },
-    { "FuncUserName": "" },
-    { "FuncPassword": "" }
+    { "Address": { "Type": "String", "Required": true } },
+    { "FuncUserName": { "Type": "String", "Required": true } },
+    { "FuncPassword": { "Type": "Secret", "Required": true } }
   ],
   "Do": [
-    { "BaseAddress": "https://%Address%" },
-    { "NewHttpRequest": { "Name": "req" } },
-    { "HttpAuth": { "Type": "Basic", "UserName": "%FuncUserName%", "Password": "%FuncPassword%", "Request": "req" } },
-    { "Request": { "Method": "GET", "Url": "/api/v1/health", "Request": "req" } },
+    { "BaseAddress": { "Address": "https://%Address%" } },
+    { "NewHttpRequest": { "ObjectName": "HealthReq" } },
+    { "HttpAuth": { "RequestObjectName": "HealthReq", "Type": "Basic", "Credentials": { "Login": "%FuncUserName%", "Password": "%FuncPassword%" } } },
+    { "Request": { "RequestObjectName": "HealthReq", "ResponseObjectName": "HealthResp", "Verb": "GET", "Url": "/api/v1/health" } },
     {
       "Condition": {
-        "If": "Response.StatusCode != 200",
-        "Then": { "Do": [{ "Throw": { "Message": "System check failed: HTTP %Response.StatusCode%" } }] }
+        "If": "HealthResp.StatusCode != 200",
+        "Then": { "Do": [{ "Throw": { "Message": "System check failed: HTTP %{HealthResp.StatusCode}%" } }] }
       }
     }
   ]

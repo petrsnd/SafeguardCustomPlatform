@@ -125,7 +125,8 @@ Tests connectivity to the target system using the asset's service account. This 
   "Do": [
     { "BaseAddress": { "Address": "https://%Address%" } },
     { "NewHttpRequest": { "ObjectName": "AuthReq" } },
-    { "Request": { "Verb": "Post", "Url": "/api/auth", "RequestObjectName": "AuthReq", "ResponseObjectName": "AuthResp", "Content": { "ContentType": "application/json", "Body": "{\"client_id\":\"%FuncUserName%\",\"client_secret\":\"%FuncPassword%\"}" } } },
+    { "SetItem": { "Name": "AuthBody", "Value": { "client_id": "%FuncUserName%", "client_secret": "%FuncPassword%" }, "IsSecret": true } },
+    { "Request": { "Verb": "Post", "Url": "/api/auth", "RequestObjectName": "AuthReq", "ResponseObjectName": "AuthResp", "Content": { "ContentObjectName": "AuthBody", "ContentType": "application/json" } } },
     { "Condition": { "If": "AuthResp.StatusCode.ToString().Equals(\"OK\")", "Then": { "Do": [{ "Return": { "Value": true } }] }, "Else": { "Do": [{ "Throw": { "Value": "Authentication failed" } }] } } }
   ]
 }
@@ -180,7 +181,8 @@ Verifies that the stored password for a managed account is still valid on the ta
   "Do": [
     { "BaseAddress": { "Address": "https://%Address%" } },
     { "NewHttpRequest": { "ObjectName": "LoginReq" } },
-    { "Request": { "Verb": "Post", "Url": "/api/login", "RequestObjectName": "LoginReq", "ResponseObjectName": "LoginResp", "Content": { "ContentType": "application/json", "Body": "{\"username\":\"%AccountUserName%\",\"password\":\"%AccountPassword%\"}" } } },
+    { "SetItem": { "Name": "LoginBody", "Value": { "username": "%AccountUserName%", "password": "%AccountPassword%" }, "IsSecret": true } },
+    { "Request": { "Verb": "Post", "Url": "/api/login", "RequestObjectName": "LoginReq", "ResponseObjectName": "LoginResp", "Content": { "ContentObjectName": "LoginBody", "ContentType": "application/json" } } },
     { "Condition": { "If": "LoginResp.StatusCode.ToString().Equals(\"OK\")", "Then": { "Do": [{ "Return": { "Value": true } }] }, "Else": { "Do": [{ "Return": { "Value": false } }] } } }
   ]
 }
@@ -257,7 +259,8 @@ Changes the password for a managed account on the target system.
     { "Function": { "Name": "Login", "Parameters": ["%Address%", "%FuncUserName%", "%FuncPassword%"], "ResultVariable": "LoginOk" } },
     { "Condition": { "If": "!LoginOk", "Then": { "Do": [{ "Throw": { "Value": "Service account login failed" } }] } } },
     { "NewHttpRequest": { "ObjectName": "ChangeReq" } },
-    { "Request": { "Verb": "Put", "Url": "/api/users/%AccountUserName%/password", "RequestObjectName": "ChangeReq", "ResponseObjectName": "ChangeResp", "Content": { "ContentType": "application/json", "Body": "{\"new_password\":\"%NewPassword%\"}" } } },
+    { "SetItem": { "Name": "ChangeBody", "Value": { "new_password": "%NewPassword%" }, "IsSecret": true } },
+    { "Request": { "Verb": "Put", "Url": "/api/users/%AccountUserName%/password", "SubstitutionInUrl": true, "RequestObjectName": "ChangeReq", "ResponseObjectName": "ChangeResp", "Content": { "ContentObjectName": "ChangeBody", "ContentType": "application/json" } } },
     { "Condition": { "If": "ChangeResp.StatusCode.ToString().Equals(\"OK\")", "Then": { "Do": [{ "Return": { "Value": true } }] }, "Else": { "Do": [{ "Throw": { "Value": "Password change failed: %ChangeResp.StatusCode%" } }] } } }
   ]
 }

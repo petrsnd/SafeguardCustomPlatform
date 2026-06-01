@@ -294,14 +294,22 @@ Add this operation:
     { "NewHttpRequest": { "ObjectName": "ChangeRequest" } },
     { "HttpAuth": { "RequestObjectName": "ChangeRequest", "Type": "Basic", "Credentials": { "Login": "%FuncUsername%", "Password": "%FuncPassword%" } } },
     {
+      "SetItem": {
+        "Name": "ChangeBody",
+        "Value": { "password": "%NewPassword%" },
+        "IsSecret": true
+      }
+    },
+    {
       "Request": {
         "RequestObjectName": "ChangeRequest",
         "ResponseObjectName": "ChangeResponse",
         "Verb": "PUT",
         "Url": "/api/users/%AccountUserName%/password",
+        "SubstitutionInUrl": true,
         "Content": {
-          "ContentType": "application/json",
-          "Body": "{\"password\": \"%NewPassword%\"}"
+          "ContentObjectName": "ChangeBody",
+          "ContentType": "application/json"
         }
       }
     },
@@ -328,13 +336,14 @@ The `Do` block follows the standard HTTP password-change pattern:
 1. Choose `https://` or `http://` with `UseSsl`.
 2. Create a new request object.
 3. Authenticate the request with Basic Auth using the service account.
-4. Send a `PUT` request to `/api/users/%AccountUserName%/password`.
-5. Treat `200` or `204` as success and throw a clear error for anything else.
+4. Build the JSON body with `SetItem` (marked `IsSecret` to keep it out of logs).
+5. Send a `PUT` request to `/api/users/%AccountUserName%/password` with `SubstitutionInUrl: true`.
+6. Treat `200` or `204` as success and throw a clear error for anything else.
 
-The JSON request body is constructed inline as a string:
+The request body is created using `SetItem` and referenced by `ContentObjectName`:
 
 ```json
-"Body": "{\"password\": \"%NewPassword%\"}"
+{ "SetItem": { "Name": "ChangeBody", "Value": { "password": "%NewPassword%" }, "IsSecret": true } }
 ```
 
 The `%NewPassword%` variable is expanded before the request is sent, so the API receives real JSON such as `{"password": "N3wP@ssw0rd!"}`. Many APIs use a slightly different shape, such as including both the old and new password in the body.
@@ -475,14 +484,22 @@ Here is the full script with all three operations in one file:
       { "NewHttpRequest": { "ObjectName": "ChangeRequest" } },
       { "HttpAuth": { "RequestObjectName": "ChangeRequest", "Type": "Basic", "Credentials": { "Login": "%FuncUsername%", "Password": "%FuncPassword%" } } },
       {
+        "SetItem": {
+          "Name": "ChangeBody",
+          "Value": { "password": "%NewPassword%" },
+          "IsSecret": true
+        }
+      },
+      {
         "Request": {
           "RequestObjectName": "ChangeRequest",
           "ResponseObjectName": "ChangeResponse",
           "Verb": "PUT",
           "Url": "/api/users/%AccountUserName%/password",
+          "SubstitutionInUrl": true,
           "Content": {
-            "ContentType": "application/json",
-            "Body": "{\"password\": \"%NewPassword%\"}"
+            "ContentObjectName": "ChangeBody",
+            "ContentType": "application/json"
           }
         }
       },
