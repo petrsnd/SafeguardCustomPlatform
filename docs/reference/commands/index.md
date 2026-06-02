@@ -14,7 +14,7 @@ Use this page as the navigation hub for the detailed command reference pages.
 | HTTP | `NewHttpRequest` | Create a named HTTP request object for later configuration. | [http-setup.md](http-setup.md) |
 | HTTP | `BaseAddress` | Set the base URL that relative request paths resolve against. | [http-setup.md](http-setup.md) |
 | HTTP | `Headers` | Add or update HTTP headers on a request object. | [http-setup.md](http-setup.md) |
-| HTTP | `HttpAuth` | Apply HTTP authentication such as Basic, Bearer, or NTLM. | [http-auth.md](http-auth.md) |
+| HTTP | `HttpAuth` | Apply HTTP authentication such as Basic or Digest. | [http-auth.md](http-auth.md) |
 | HTTP | `GetCookie` | Read a cookie value from the current HTTP session state. | [cookies.md](cookies.md) |
 | HTTP | `SetCookie` | Create or overwrite a cookie value for later requests. | [cookies.md](cookies.md) |
 | HTTP | `ClearCookie` | Remove a cookie from the current HTTP session state. | [cookies.md](cookies.md) |
@@ -37,17 +37,17 @@ Use this page as the navigation hub for the detailed command reference pages.
 | SSH/Telnet | `DiscoverSshHostKey` | Retrieve SSH host key data for asset trust workflows. | [ssh-host-key.md](ssh-host-key.md) |
 | Flow Control | `Condition` | Branch to `Then` or `Else` based on an expression result. | [flow-control.md](flow-control.md) |
 | Flow Control | `Switch` | Match a value against cases and run the matching block. | [flow-control.md](flow-control.md) |
-| Flow Control | `For` | Repeat a block a fixed number of times. | [flow-control.md](flow-control.md) |
+| Flow Control | `For` | Execute a condition-driven loop with optional iteration limits. | [flow-control.md](flow-control.md) |
 | Flow Control | `ForEach` | Iterate over each element in a collection. | [flow-control.md](flow-control.md) |
 | Functions | `Function` | Call a named reusable function block. | [functions.md](functions.md) |
 | Functions | `Return` | Exit a function or operation and optionally return a value. | [functions.md](functions.md) |
-| Functions | `Break` | Exit a loop or function early (alias for `Return`). | [functions.md](functions.md) |
+| Functions | `Break` | Exit a loop early. | [functions.md](functions.md) |
 | Functions | `Eval` | Evaluate an expression for side effects or object manipulation. | [functions.md](functions.md) |
 | Error Handling | `Try` | Run a block with `Catch` and optional cleanup behavior. | [error-handling.md](error-handling.md) |
 | Error Handling | `Throw` | Raise an error to stop execution or trigger a catch block. | [error-handling.md](error-handling.md) |
 | Utilities | `SetItem` | Create or update a variable value in script state. | [utilities.md](utilities.md) |
 | Utilities | `Declare` | Alias for `SetItem` — create or update a variable. | [utilities.md](utilities.md) |
-| Utilities | `Split` | Split text into an array using a delimiter or pattern. | [utilities.md](utilities.md) |
+| Utilities | `Split` | Split text into an array using delimiter characters. | [utilities.md](utilities.md) |
 | Utilities | `Comment` | Add an in-script note with no runtime effect. | [utilities.md](utilities.md) |
 | Logging and Status | `Log` | Write a message to the task log. | [logging.md](logging.md) |
 | Logging and Status | `Status` | Report progress, phase, or a localized status message. | [logging.md](logging.md) |

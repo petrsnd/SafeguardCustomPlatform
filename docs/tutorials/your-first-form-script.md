@@ -18,7 +18,7 @@ This is the right pattern when the target has no REST API and the supported work
 Before you start, make sure you have:
 
 - A target web application with an HTML login form and a password-change page.
-- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](development-workflow.md).
+- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](../guides/development-workflow.md).
 - Browser developer tools so you can inspect field names and submit URLs.
 - Basic familiarity with JSON, HTML forms, and HTTP redirects.
 
@@ -69,13 +69,13 @@ Replace the `Login` function with this version. It defines the function inputs a
   "Name": "Login",
   "Parameters": [
     { "Address": { "Type": "String", "Required": true } },
-    { "UseSsl": { "Type": "Boolean", "Required": false, "DefaultValue": true } },
+    { "UseSsl": { "Type": "String", "Required": false, "DefaultValue": "true" } },
     { "UserName": { "Type": "String", "Required": true } },
     { "Password": { "Type": "Secret", "Required": true } }
   ],
   "Do": [
     { "Condition": {
-        "If": "UseSsl",
+        "If": "UseSsl == \"True\"",
         "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] },
         "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] }
     } }
@@ -94,12 +94,12 @@ Next, create a request object and send a `GET` to the login page so you can capt
   "Name": "Login",
   "Parameters": [
     { "Address": { "Type": "String", "Required": true } },
-    { "UseSsl": { "Type": "Boolean", "Required": false, "DefaultValue": true } },
+    { "UseSsl": { "Type": "String", "Required": false, "DefaultValue": "true" } },
     { "UserName": { "Type": "String", "Required": true } },
     { "Password": { "Type": "Secret", "Required": true } }
   ],
   "Do": [
-    { "Condition": { "If": "UseSsl", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
+    { "Condition": { "If": "UseSsl == \"True\"", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
     { "NewHttpRequest": { "ObjectName": "LoginPageRequest" } },
     { "Request": { "Verb": "Get", "Url": "/login", "RequestObjectName": "LoginPageRequest", "ResponseObjectName": "Global:LoginResponse", "AllowRedirect": true } }
   ]
@@ -117,12 +117,12 @@ At this stage you are not logging in yet. You are only retrieving the HTML page 
   "Name": "Login",
   "Parameters": [
     { "Address": { "Type": "String", "Required": true } },
-    { "UseSsl": { "Type": "Boolean", "Required": false, "DefaultValue": true } },
+    { "UseSsl": { "Type": "String", "Required": false, "DefaultValue": "true" } },
     { "UserName": { "Type": "String", "Required": true } },
     { "Password": { "Type": "Secret", "Required": true } }
   ],
   "Do": [
-    { "Condition": { "If": "UseSsl", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
+    { "Condition": { "If": "UseSsl == \"True\"", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
     { "NewHttpRequest": { "ObjectName": "LoginPageRequest" } },
     { "Request": { "Verb": "Get", "Url": "/login", "RequestObjectName": "LoginPageRequest", "ResponseObjectName": "Global:LoginResponse", "AllowRedirect": true } },
     { "ExtractFormData": { "ResponseObjectName": "LoginResponse", "FormObjectName": "LoginForm" } },
@@ -142,12 +142,12 @@ Use `SetFormValue` to update the extracted form object. `InputName` must match t
   "Name": "Login",
   "Parameters": [
     { "Address": { "Type": "String", "Required": true } },
-    { "UseSsl": { "Type": "Boolean", "Required": false, "DefaultValue": true } },
+    { "UseSsl": { "Type": "String", "Required": false, "DefaultValue": "true" } },
     { "UserName": { "Type": "String", "Required": true } },
     { "Password": { "Type": "Secret", "Required": true } }
   ],
   "Do": [
-    { "Condition": { "If": "UseSsl", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
+    { "Condition": { "If": "UseSsl == \"True\"", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
     { "NewHttpRequest": { "ObjectName": "LoginPageRequest" } },
     { "Request": { "Verb": "Get", "Url": "/login", "RequestObjectName": "LoginPageRequest", "ResponseObjectName": "Global:LoginResponse", "AllowRedirect": true } },
     { "ExtractFormData": { "ResponseObjectName": "LoginResponse", "FormObjectName": "LoginForm" } },
@@ -169,12 +169,12 @@ Create a second request object and submit the form with `application/x-www-form-
   "Name": "Login",
   "Parameters": [
     { "Address": { "Type": "String", "Required": true } },
-    { "UseSsl": { "Type": "Boolean", "Required": false, "DefaultValue": true } },
+    { "UseSsl": { "Type": "String", "Required": false, "DefaultValue": "true" } },
     { "UserName": { "Type": "String", "Required": true } },
     { "Password": { "Type": "Secret", "Required": true } }
   ],
   "Do": [
-    { "Condition": { "If": "UseSsl", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
+    { "Condition": { "If": "UseSsl == \"True\"", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
     { "NewHttpRequest": { "ObjectName": "LoginPageRequest" } },
     { "Request": { "Verb": "Get", "Url": "/login", "RequestObjectName": "LoginPageRequest", "ResponseObjectName": "Global:LoginResponse", "AllowRedirect": true } },
     { "ExtractFormData": { "ResponseObjectName": "LoginResponse", "FormObjectName": "LoginForm" } },
@@ -198,12 +198,12 @@ Many portals redirect after a successful login and stay on the login page when a
   "Name": "Login",
   "Parameters": [
     { "Address": { "Type": "String", "Required": true } },
-    { "UseSsl": { "Type": "Boolean", "Required": false, "DefaultValue": true } },
+    { "UseSsl": { "Type": "String", "Required": false, "DefaultValue": "true" } },
     { "UserName": { "Type": "String", "Required": true } },
     { "Password": { "Type": "Secret", "Required": true } }
   ],
   "Do": [
-    { "Condition": { "If": "UseSsl", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
+    { "Condition": { "If": "UseSsl == \"True\"", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
     { "NewHttpRequest": { "ObjectName": "LoginPageRequest" } },
     { "Request": { "Verb": "Get", "Url": "/login", "RequestObjectName": "LoginPageRequest", "ResponseObjectName": "Global:LoginResponse", "AllowRedirect": true } },
     { "ExtractFormData": { "ResponseObjectName": "LoginResponse", "FormObjectName": "LoginForm" } },
@@ -350,12 +350,12 @@ Here is the complete script in one block:
       "Name": "Login",
       "Parameters": [
         { "Address": { "Type": "String", "Required": true } },
-        { "UseSsl": { "Type": "Boolean", "Required": false, "DefaultValue": true } },
+        { "UseSsl": { "Type": "String", "Required": false, "DefaultValue": "true" } },
         { "UserName": { "Type": "String", "Required": true } },
         { "Password": { "Type": "Secret", "Required": true } }
       ],
       "Do": [
-        { "Condition": { "If": "UseSsl", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
+        { "Condition": { "If": "UseSsl == \"True\"", "Then": { "Do": [ { "BaseAddress": { "Address": "https://%Address%" } } ] }, "Else": { "Do": [ { "BaseAddress": { "Address": "http://%Address%" } } ] } } },
         { "NewHttpRequest": { "ObjectName": "LoginPageRequest" } },
         { "Request": { "Verb": "Get", "Url": "/login", "RequestObjectName": "LoginPageRequest", "ResponseObjectName": "Global:LoginResponse", "AllowRedirect": true } },
         { "ExtractFormData": { "ResponseObjectName": "LoginResponse", "FormObjectName": "LoginForm" } },
@@ -403,12 +403,14 @@ When `-RequireCurrentPassword` is enabled, SPP supplies the account's current pa
 ### Create the asset and account
 
 ```powershell
-New-SafeguardCustomPlatformAsset "My First Form Platform" "portal.example.com"
+New-SafeguardCustomPlatformAsset "My First Form Platform" "portal.example.com" `
+    -ServiceAccountCredentialType AccountPassword
 New-SafeguardAssetAccount "portal.example.com" "testuser"
 Set-SafeguardAssetAccountPassword "portal.example.com" "testuser"
 ```
 
-Because this platform has no separate service account, you do not need to configure service account credentials on the asset. The account manages itself.
+> [!NOTE]
+> This platform uses `AccountPassword` as the service account credential type. This tells SPP to use the managed account's own password as the authentication credential for `CheckPassword` and `ChangePassword` operations — no separate service account is needed.
 
 ### Test
 
@@ -418,7 +420,7 @@ Test-SafeguardAssetAccountPassword "portal.example.com" "testuser" -ExtendedLogg
 
 `Test-SafeguardAssetAccountPassword` runs `CheckPassword` — it logs in as the account and confirms the stored credentials are correct. There is no Test Connection (CheckSystem) for this platform because there is no service account.
 
-For the complete development loop and log review, see [Development Workflow](development-workflow.md).
+For the complete development loop and log review, see [Development Workflow](../guides/development-workflow.md).
 
 ## Key Differences from REST API Scripts
 
@@ -447,3 +449,4 @@ For the complete development loop and log review, see [Development Workflow](dev
 - [HTTP Platforms Guide](../guides/http-platforms.md) — broader HTTP scripting patterns and troubleshooting guidance.
 - [`CustomFacebook.json`](../../samples/http/facebook/CustomFacebook.json) — production sample showing login and password-change form submission.
 - [`CustomTwitter.json`](../../samples/http/twitter/CustomTwitter.json) — another form-based sample with different field names and redirects.
+

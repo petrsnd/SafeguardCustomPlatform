@@ -21,24 +21,36 @@ Open the file and add this `CheckPassword` operation after the existing `CheckSy
 ```json
 "CheckPassword": {
   "Parameters": [
-    { "Address": "" },
-    { "Port": "" },
-    { "AccountUserName": "" },
-    { "AccountPassword": "" }
+    { "Address": { "Type": "String", "Required": true } },
+    { "Port": { "Type": "Integer", "Required": false, "DefaultValue": 22 } },
+    { "AccountUserName": { "Type": "String", "Required": true } },
+    { "AccountPassword": { "Type": "Secret", "Required": true } }
   ],
   "Do": [
-    { "Connect": { "Address": "%Address%", "Port": "%Port%", "UserName": "%AccountUserName%", "Password": "%AccountPassword%", "RequestTerminal": true } },
-    { "Disconnect": {} }
+    { "Connect": {
+        "ConnectionObjectName": "SshConn",
+        "Type": "Ssh",
+        "NetworkAddress": "%Address%",
+        "Port": "%Port%",
+        "Login": "%AccountUserName%",
+        "Password": "%AccountPassword%"
+    } },
+    { "Disconnect": { "ConnectionObjectName": "SshConn" } },
+    { "Return": { "Value": true } }
   ]
 }
 ```
 
-This connects with the managed account's credentials. If the connection succeeds, the password is valid.
+This connects with the managed account's credentials. If the connection succeeds, the script returns `true` to indicate the password is valid. Without an explicit `Return`, SPP treats the result as a failed check.
 
 ### 3. Upload to SPP
 
 ```powershell
-Import-SafeguardCustomPlatformScript -FilePath .\MyLinuxCheck.json
+# Create a new custom platform with the script
+New-SafeguardCustomPlatform -Name "MyLinuxCheck" -ScriptFile .\MyLinuxCheck.json
+
+# To update an existing platform's script later:
+# Import-SafeguardCustomPlatformScript -PlatformToEdit "MyLinuxCheck" -ScriptFile .\MyLinuxCheck.json
 ```
 
 ### 4. Create an Asset

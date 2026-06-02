@@ -15,25 +15,22 @@ Use this table when you want to know, "What do I add to my script to make SPP ex
 
 | Capability | Flag | Add this to your script |
 | --- | --- | --- |
-| Check passwords | `PasswordFl` | `CheckPassword` with `AccountPassword` |
-| Rotate passwords | `AccountPasswordFl` | `ChangePassword` with `AccountPassword` and `NewPassword` |
-| Manage SSH keys | `SshKeyFl` | `CheckSshKey` |
-| Manage API keys | `ApiKeyFl` | `CheckApiKey` |
+| Password workflows | `PasswordFeatureFl` | Any of: `CheckSystem`, `CheckPassword`, `ChangePassword`, `EnableAccount`, `DisableAccount`, `ElevateAccount`, `DemoteAccount`, `DiscoverSshHostKey`, `UpdateDependentSystem` |
+| Account password field | `AccountPasswordFl` | `AccountPassword` parameter (Secret type) |
+| Manage SSH keys | `SshKeyFeatureFl` | `CheckSshKey`, `ChangeSshKey`, or `DiscoverAuthorizedKeys` |
+| Manage API keys | `ApiKeyFeatureFl` | `CheckApiKey` or `ChangeApiKey` |
 | File-based workflows | `FileFeatureFl` | Nothing — always enabled |
-| Discover SSH host keys | `SshHostKeyFl` | `DiscoverSshHostKey` |
+| SSH transport fields | `SshTransportFl` | `DiscoverSshHostKey` operation, or parameters: `CheckHostKey`, `HostKey`, `UserKey`, `NewSshPrivateKey`, `NewSshKeyComment`, `NewSshKey`, `OldSshKey` |
 | Discover accounts | `AccountDiscoveryFl` | `DiscoverAccounts` |
 | Discover services | `ServiceDiscoveryFl` | `DiscoverServices` |
 | Enable or disable accounts | `SuspendRestoreAccountFl` | `EnableAccount` or `DisableAccount` |
 | Elevate or demote accounts | `ElevateDemoteAccountFl` | `ElevateAccount` or `DemoteAccount` |
-| Discover authorized keys | `DiscoverSshKeyFl` | `DiscoverAuthorizedKeys` |
 | Discover local assets | `LocalAssetDiscoveryFl` | Not available for custom platforms |
 | Update dependent systems | `DependentSystemFl` | `UpdateDependentSystem` |
-| Use custom dependency commands | `CustomDependencyFl` | `UpdateDependentSystem` with `DependentCommand` |
-| Show the Port field | `PortFl` | Any operation with `Port` |
-| Show the SSH Port field | `SshPortFl` | Any operation with `SshPort` |
-| Show the SSL/TLS field | `UseSslFl` | Any operation with `UseSsl` |
-| Show the Timeout field | `TimeoutFl` | Any operation with `Timeout` |
-| Show the Check Host Key field | `CheckHostKeyFl` | Any operation with `CheckHostKey` |
+| Custom dependency commands | `CustomDependencyUpdateFl` | `DependentCommand` parameter (String type) |
+| Show the Port field | `CustomPortFl` | `Port` parameter (Integer type) |
+| Show the SSL/TLS field | `UseSslFl` | `UseSsl` parameter (Boolean type) |
+| Show the Timeout field | `TimeoutFl` | `Timeout` parameter (Integer type) |
 
 ## How Feature Flags Work
 
@@ -48,65 +45,61 @@ This means your script is the capability definition. If the required operation o
 
 ## Complete Flag Mapping
 
-This is the definitive mapping between script content and feature flags.
+This table documents the primary flags relevant to custom platform authors. Additional flags (such as `ClientIdFl`, `SslVerificationFl`, `WorkstationIdFl`, and `HttpProxyFl`) are derived automatically from specific reserved parameters.
 
 | Flag | Derived From |
 | --- | --- |
-| `PasswordFl` | `CheckPassword` operation with `AccountPassword` parameter |
-| `SshKeyFl` | `CheckSshKey` operation present |
-| `ApiKeyFl` | `CheckApiKey` operation present |
+| `PasswordFeatureFl` | Any operation in: `CheckSystem`, `CheckPassword`, `ChangePassword`, `EnableAccount`, `DisableAccount`, `ElevateAccount`, `DemoteAccount`, `DiscoverSshHostKey`, `RetrieveSshHostKey`, `UpdateDependentSystem` |
+| `SshKeyFeatureFl` | `CheckSshKey`, `ChangeSshKey`, or `DiscoverAuthorizedKeys` operation present |
+| `ApiKeyFeatureFl` | `CheckApiKey` or `ChangeApiKey` operation present |
 | `FileFeatureFl` | Always `true` for all custom platforms |
-| `AccountPasswordFl` | `ChangePassword` operation with `AccountPassword` and `NewPassword` |
-| `SshHostKeyFl` | `DiscoverSshHostKey` operation present |
+| `AccountPasswordFl` | `AccountPassword` parameter declared with Secret type (unless overridden by platform-level auth exclusions) |
+| `SshTransportFl` | `DiscoverSshHostKey` operation, or parameters: `CheckHostKey` (Boolean), `HostKey` (String), `UserKey` (Secret), `NewSshPrivateKey` (Secret), `NewSshKeyComment` (String), `NewSshKey` (String), `OldSshKey` (String) |
 | `AccountDiscoveryFl` | `DiscoverAccounts` operation present |
 | `ServiceDiscoveryFl` | `DiscoverServices` operation present |
 | `SuspendRestoreAccountFl` | `EnableAccount` or `DisableAccount` operation present |
 | `ElevateDemoteAccountFl` | `ElevateAccount` or `DemoteAccount` operation present |
-| `DiscoverSshKeyFl` | `DiscoverAuthorizedKeys` operation present |
-| `LocalAssetDiscoveryFl` | `DiscoverAssets` plus internal `IsSystemOwned` flag (**not available to custom platforms**) |
+| `LocalAssetDiscoveryFl` | `DiscoverAssets` operation plus `DiscoveryQuery` parameter plus internal `IsSystemOwned` flag (**not available to custom platforms**) |
 | `DependentSystemFl` | `UpdateDependentSystem` operation present |
-| `CustomDependencyFl` | `UpdateDependentSystem` with `DependentCommand` parameter |
-| `PortFl` | Any operation with `Port` parameter |
-| `SshPortFl` | Any operation with `SshPort` parameter |
-| `UseSslFl` | Any operation with `UseSsl` parameter |
-| `TimeoutFl` | Any operation with `Timeout` parameter |
-| `CheckHostKeyFl` | Any operation with `CheckHostKey` parameter |
+| `CustomDependencyUpdateFl` | `DependentCommand` parameter (String type) present |
+| `CustomPortFl` | `Port` parameter (Integer type) present |
+| `UseSslFl` | `UseSsl` parameter (Boolean type) present |
+| `TimeoutFl` | `Timeout` parameter (Integer type) present |
 
 ## What Each Flag Enables
 
 ### Password and Credential Workflows
 
-- **`PasswordFl`**
+- **`PasswordFeatureFl`**
   - Enables password verification behavior for managed accounts.
   - Makes SPP treat the platform as one that can validate an existing account password.
-  - In practice, add `CheckPassword` with `AccountPassword` when you want manual or scheduled password checks.
+  - Set by any of: `CheckSystem`, `CheckPassword`, `ChangePassword`, `EnableAccount`, `DisableAccount`, `ElevateAccount`, `DemoteAccount`, `DiscoverSshHostKey`, or `UpdateDependentSystem`.
 
 - **`AccountPasswordFl`**
   - Enables password change and rotation workflows.
   - Makes password profile and scheduled password-change settings meaningful for this platform.
-  - In practice, add `ChangePassword` with both `AccountPassword` and `NewPassword`.
+  - Derived from the `AccountPassword` reserved parameter (Secret type). Unlike other flags, this is parameter-driven rather than operation-driven.
 
-- **`SshKeyFl`**
+- **`SshKeyFeatureFl`**
   - Enables SSH key management behavior for accounts that use this platform.
   - Makes SSH-key-oriented workflows and related account handling available.
-  - The flag is derived from `CheckSshKey`; for a complete SSH key rotation solution, you will usually also add `ChangeSshKey`.
+  - Set by `CheckSshKey`, `ChangeSshKey`, or `DiscoverAuthorizedKeys`.
 
-- **`ApiKeyFl`**
+- **`ApiKeyFeatureFl`**
   - Enables API key management behavior for the platform.
   - Makes API-key check and related workflows available.
-  - The flag is derived from `CheckApiKey`; for full rotation, pair it with `ChangeApiKey`.
+  - Set by `CheckApiKey` or `ChangeApiKey`.
 
 - **`FileFeatureFl`**
   - Keeps file-based platform capability enabled for custom platforms.
   - No special script content is required to set this flag.
   - File-specific behavior still depends on the file operations you implement.
 
-### Discovery and SSH Trust Workflows
+### Discovery and SSH Transport Workflows
 
-- **`SshHostKeyFl`**
-  - Enables SSH host-key discovery and related trust workflows.
-  - Makes it possible for the platform to advertise SSH host-key handling.
-  - Add `DiscoverSshHostKey` when you want SPP to retrieve host-key material from the target.
+- **`SshTransportFl`**
+  - Enables SSH transport and host-key related UI fields on the platform.
+  - Set by `DiscoverSshHostKey` operation, or by SSH-related parameters: `CheckHostKey`, `HostKey`, `UserKey`, `NewSshPrivateKey`, `NewSshKeyComment`, `NewSshKey`, `OldSshKey`.
 
 - **`AccountDiscoveryFl`**
   - Enables account discovery workflows.
@@ -118,15 +111,10 @@ This is the definitive mapping between script content and feature flags.
   - Makes service-discovery behavior available where SPP supports it for the platform.
   - Add `DiscoverServices` when you need to discover Windows services, scheduled tasks, or similar service objects.
 
-- **`DiscoverSshKeyFl`**
-  - Enables authorized-key discovery workflows.
-  - Makes SPP treat the platform as one that can inspect existing authorized keys.
-  - Add `DiscoverAuthorizedKeys` when you want to discover keys already present for an account.
-
 - **`LocalAssetDiscoveryFl`**
   - Would enable local asset discovery behavior.
-  - Custom platforms cannot set the internal `IsSystemOwned` condition required for this flag.
-  - Treat this capability as unavailable for custom platform authors today.
+  - Requires `DiscoverAssets` operation with the `DiscoveryQuery` parameter AND the internal `IsSystemOwned` condition.
+  - Custom platforms cannot set `IsSystemOwned`. Treat this capability as unavailable for custom platform authors today.
 
 ### Access and Privilege Workflows
 
@@ -147,37 +135,27 @@ This is the definitive mapping between script content and feature flags.
   - Makes dependency-related settings in change workflows meaningful for the platform.
   - Add `UpdateDependentSystem` when password changes must also update downstream systems.
 
-- **`CustomDependencyFl`**
+- **`CustomDependencyUpdateFl`**
   - Enables custom dependency command behavior.
   - Makes the custom dependency configuration in the change profile relevant because SPP can pass `DependentCommand` values into the script.
-  - Add `DependentCommand` to the `UpdateDependentSystem` operation when you want the script to react to profile-defined dependency commands.
+  - Add `DependentCommand` parameter (String type) to the `UpdateDependentSystem` operation.
 
 ### Built-In Connection Fields
 
-- **`PortFl`**
+- **`CustomPortFl`**
   - Shows the built-in **Port** field on the asset or platform configuration.
   - Lets your script consume `Port` as a reserved connection parameter instead of inventing a custom field.
-  - Add `Port` to any operation that needs a configurable port.
-
-- **`SshPortFl`**
-  - Shows the built-in **SSH Port** field used for SSH session handling.
-  - Useful when the platform needs an SSH session port that is distinct from the generic `Port` field.
-  - Add `SshPort` to any operation that needs it.
+  - Add `Port` (Integer type) to any operation that needs a configurable port.
 
 - **`UseSslFl`**
   - Shows the built-in **Use SSL** or TLS-related setting.
   - Lets administrators control HTTPS or TLS behavior through a built-in field.
-  - Add `UseSsl` to any operation that should honor that setting.
+  - Add `UseSsl` (Boolean type) to any operation that should honor that setting.
 
 - **`TimeoutFl`**
   - Shows the built-in **Timeout** field.
   - Lets administrators tune connection or request timeout behavior through a built-in field.
-  - Add `Timeout` to any operation that should use a configurable timeout.
-
-- **`CheckHostKeyFl`**
-  - Shows the built-in **Check Host Key** setting for SSH trust validation.
-  - Lets administrators control whether the script should validate the target host key.
-  - Add `CheckHostKey` to any SSH-based operation that should respect this platform setting.
+  - Add `Timeout` (Integer type) to any operation that should use a configurable timeout.
 
 ## How to Enable a Flag
 
@@ -185,25 +163,22 @@ Use this checklist when a UI field or workflow is missing.
 
 | If you want to enable... | Add to your script | Notes |
 | --- | --- | --- |
-| `PasswordFl` | `CheckPassword` + `AccountPassword` | Use the exact reserved parameter name `AccountPassword`. |
-| `AccountPasswordFl` | `ChangePassword` + `AccountPassword` + `NewPassword` | Usually paired with a password profile for rotation. |
-| `SshKeyFl` | `CheckSshKey` | Add `ChangeSshKey` too if you want actual key rotation. |
-| `ApiKeyFl` | `CheckApiKey` | Add `ChangeApiKey` too if you want actual key rotation. |
+| `PasswordFeatureFl` | Any of: `CheckSystem`, `CheckPassword`, `ChangePassword`, `EnableAccount`, `DisableAccount`, `ElevateAccount`, `DemoteAccount`, `DiscoverSshHostKey`, `UpdateDependentSystem` | Many operations contribute to this flag. |
+| `AccountPasswordFl` | `AccountPassword` parameter (Secret type) | Derived from the parameter presence, not from a specific operation. |
+| `SshKeyFeatureFl` | `CheckSshKey`, `ChangeSshKey`, or `DiscoverAuthorizedKeys` | Any of these operations enables the flag. |
+| `ApiKeyFeatureFl` | `CheckApiKey` or `ChangeApiKey` | Either operation enables the flag. |
 | `FileFeatureFl` | Nothing | This flag is always on. |
-| `SshHostKeyFl` | `DiscoverSshHostKey` | See [Operations Reference](../reference/operations.md#discoversshhostkey). |
+| `SshTransportFl` | `DiscoverSshHostKey` operation, or SSH parameters (`CheckHostKey`, `HostKey`, `UserKey`, etc.) | See [Operations Reference](../reference/operations.md#discoversshhostkey). |
 | `AccountDiscoveryFl` | `DiscoverAccounts` | Use the discovery output commands documented in the [Commands Reference](../reference/commands/index.md). |
 | `ServiceDiscoveryFl` | `DiscoverServices` | Pair with the right discovery output from your `Do` block. |
 | `SuspendRestoreAccountFl` | `EnableAccount` or `DisableAccount` | Add both if you need full suspend/restore support. |
 | `ElevateDemoteAccountFl` | `ElevateAccount` or `DemoteAccount` | Add both if you need full elevate/demote support. |
-| `DiscoverSshKeyFl` | `DiscoverAuthorizedKeys` | Pair with the matching key-management operations as needed. |
 | `DependentSystemFl` | `UpdateDependentSystem` | Use this when downstream systems must be updated after a credential change. |
-| `CustomDependencyFl` | `UpdateDependentSystem` + `DependentCommand` | `DependentCommand` must use the exact reserved name. |
-| `PortFl` | `Port` parameter in any operation | `Port` is a reserved parameter documented in [Reserved Parameters](../reference/reserved-parameters.md#core-credentials). |
-| `SshPortFl` | `SshPort` parameter in any operation | Use when you need the SSH-session port specifically. |
-| `UseSslFl` | `UseSsl` parameter in any operation | Good for HTTP or TLS-aware platforms. |
-| `TimeoutFl` | `Timeout` parameter in any operation | Common on `CheckSystem`, `CheckPassword`, and HTTP request workflows. |
-| `CheckHostKeyFl` | `CheckHostKey` parameter in any operation | Common on SSH `Connect`-based operations. |
-| `LocalAssetDiscoveryFl` | You cannot enable this in a custom platform | Custom platforms cannot supply the required internal flag. |
+| `CustomDependencyUpdateFl` | `DependentCommand` parameter (String type) | `DependentCommand` must use the exact reserved name. |
+| `CustomPortFl` | `Port` parameter (Integer type) | `Port` is a reserved parameter documented in [Reserved Parameters](../reference/reserved-parameters.md#core-credentials). |
+| `UseSslFl` | `UseSsl` parameter (Boolean type) | Good for HTTP or TLS-aware platforms. |
+| `TimeoutFl` | `Timeout` parameter (Integer type) | Common on `CheckSystem`, `CheckPassword`, and HTTP request workflows. |
+| `LocalAssetDiscoveryFl` | You cannot enable this in a custom platform | Requires `DiscoverAssets` + `DiscoveryQuery` parameter + internal `IsSystemOwned` flag. |
 
 ## Troubleshooting
 
@@ -211,7 +186,7 @@ Use this checklist when a UI field or workflow is missing.
 > When a feature flag does not appear after upload, the problem is usually the operation name or parameter name.
 
 - **Verify the operation name is supported and spelled exactly right.** Use the [Operations Reference](../reference/operations.md).
-- **Verify the parameter name is the exact reserved name SPP expects.** Use the [Reserved Parameters](../reference/reserved-parameters.md). For example, `AccountPassword` works, but a custom name such as `UserPassword` will not set `PasswordFl`.
+- **Verify the parameter name is the exact reserved name SPP expects.** Use the [Reserved Parameters](../reference/reserved-parameters.md). For example, `AccountPassword` works, but a custom name such as `UserPassword` will not set `AccountPasswordFl`.
 - **Check both the operation and the parameter requirement.** Some flags need only an operation, while others require a specific reserved parameter too.
 - **Re-upload the script after changes.** Feature flags are recomputed during validation of the uploaded script content.
 - **Check the `Do` block only after the feature prerequisites are correct.** The feature flag comes from the operation and parameter declaration, not from the detailed command logic inside `Do`.
@@ -224,4 +199,4 @@ Use this checklist when a UI field or workflow is missing.
 > `FileFeatureFl` is always `true` for custom platforms. You do not need to add anything to your script for that flag.
 
 > [!WARNING]
-> `LocalAssetDiscoveryFl` requires an internal `IsSystemOwned` condition that custom platforms cannot set. Even if you add discovery logic, this specific flag is not currently available for custom platforms.
+> `LocalAssetDiscoveryFl` requires `DiscoverAssets` with the `DiscoveryQuery` parameter AND an internal `IsSystemOwned` condition that custom platforms cannot set. Even if you add discovery logic, this specific flag is not currently available for custom platforms.

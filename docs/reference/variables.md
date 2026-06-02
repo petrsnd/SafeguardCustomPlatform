@@ -121,15 +121,19 @@ If the value itself is sensitive, mark it as secret.
 
 That pattern appears in the Cisco Telnet sample when the script builds a command string that embeds the new password.
 
-### Short form
+### Scalar form (not supported)
 
-Older samples also show a shorthand form:
+Older documentation may show a shorthand form:
 
 ```json
 { "SetItem": "PasswordType" }
 ```
 
-Use the full object form when possible because it is clearer and lets you show the source value explicitly. The shorthand is useful when the current command context already exposes a same-named value and you just want to materialize it as a variable.
+> **Warning:** This scalar syntax is **not valid**. The engine only processes commands where the component value is a JSON object. A scalar value is silently discarded and produces no executable command. Always use the full object form with `Name` and `Value`:
+
+```json
+{ "SetItem": { "Name": "PasswordType", "Value": "%SomeSource%" } }
+```
 
 > `SetItem` is the main way to make intermediate parsing results readable. Instead of repeating the same long regex or string transform several times, compute it once and reuse the variable.
 

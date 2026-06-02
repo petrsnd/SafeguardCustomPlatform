@@ -19,7 +19,7 @@ This is intentionally small. It is the quickest way to get from zero to a workin
 Before you start, make sure you have:
 
 - A Linux target with SSH access. A VM or container is fine.
-- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](development-workflow.md).
+- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](../guides/development-workflow.md).
 - Basic familiarity with JSON.
 
 ## Step 1: Create the Script Skeleton
@@ -496,16 +496,25 @@ Validation is your first checkpoint. If `Test-SafeguardCustomPlatformScript` fai
 Once the platform exists, create a test asset and a test account:
 
 ```powershell
-New-SafeguardCustomPlatformAsset "My First SSH Platform" "10.0.0.1" -ServiceAccountCredentialType Password -ServiceAccountName "root"
+$svcPassword = Read-Host -AsSecureString "Enter service account password for root"
+New-SafeguardCustomPlatformAsset "My First SSH Platform" "10.0.0.1" `
+    -ServiceAccountCredentialType Password `
+    -ServiceAccountName "root" `
+    -ServiceAccountPassword $svcPassword `
+    -AcceptSshHostKey
 New-SafeguardAssetAccount "10.0.0.1" "testuser"
-Set-SafeguardAssetAccountPassword -AssetToUse "10.0.0.1" -AccountToUse "testuser"
+Set-SafeguardAssetAccountPassword -AssetToSet "10.0.0.1" -AccountToSet "testuser"
 ```
 
 In this example:
 
 - The asset uses `root` as the service account for `CheckSystem` and `ChangePassword`.
+- `-ServiceAccountPassword` supplies the service account password (SPP will prompt interactively if omitted).
+- `-AcceptSshHostKey` automatically discovers and accepts the SSH host key during asset creation. Without this, `Test-SafeguardAsset` will fail with "SSH host key has not been accepted."
 - `testuser` is the managed account you will verify with `CheckPassword` and rotate with `ChangePassword`.
 - `Set-SafeguardAssetAccountPassword` securely prompts you for the managed account password.
+
+> **Note:** `New-SafeguardCustomPlatformAsset` will interactively prompt for `DisplayName` and for any custom script parameters (e.g., `RequestTerminal`) not supplied via `-CustomScriptParameters`. Additionally, `-AcceptSshHostKey` requires the platform script to include a `UserKey` parameter so SPP can attempt SSH key-based host key discovery. If your script does not include `UserKey`, omit `-AcceptSshHostKey` and either accept the host key through the web UI or use `-NoSshHostKeyDiscovery` with `CheckHostKey` defaulting to `false`.
 
 Because `ChangePassword` uses `sudo passwd`, make sure the service account is allowed to change the target account's password. For a first lab, using `root` as the service account is the simplest setup.
 

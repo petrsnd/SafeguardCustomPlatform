@@ -52,34 +52,50 @@ Because discovery only reads data (no interactive prompts), it works well with `
       }
     },
     {
+      "SetItem": { "Name": "Stdout", "Value": "" }
+    },
+    {
+      "SetItem": { "Name": "Stderr", "Value": "" }
+    },
+    {
+      "SetItem": { "Name": "rc", "Value": 0 }
+    },
+    {
       "ExecuteCommand": {
         "ConnectionObjectName": "SshConnection",
         "Command": "awk -F: '$3 >= 1000 && $7 !~ /nologin|false/ {print $1}' /etc/passwd",
-        "ResultVariable": "Result"
+        "BufferName": "Stdout",
+        "StderrBufferName": "Stderr",
+        "ExitStatusBufferName": "rc"
       }
     },
     {
       "Condition": {
-        "If": "(Result.rc != 0)",
+        "If": "(rc != 0)",
         "Then": { "Do": [
-          { "Throw": { "Message": "Failed to query accounts: %{ Result.Stderr }%" } }
+          { "Throw": { "Value": "Failed to query accounts: %Stderr%" } }
         ] }
       }
     },
     {
+      "SetItem": { "Name": "AccountLines", "Value": "%{ Stdout.Split('\\n') }%" }
+    },
+    {
       "ForEach": {
-        "Item": "acct",
-        "In": "%{ Result.Stdout.Split('\\n') }%",
-        "Do": [
-          {
-            "Condition": {
-              "If": "acct != ''",
-              "Then": { "Do": [
-                { "WriteDiscoveredAccount": { "AccountName": "%acct%" } }
-              ] }
+        "CollectionName": "AccountLines",
+        "ElementName": "acct",
+        "Body": {
+          "Do": [
+            {
+              "Condition": {
+                "If": "acct != ''",
+                "Then": { "Do": [
+                  { "WriteDiscoveredAccount": { "Name": "%acct%" } }
+                ] }
+              }
             }
-          }
-        ]
+          ]
+        }
       }
     },
     {
@@ -92,15 +108,16 @@ Because discovery only reads data (no interactive prompts), it works well with `
 Key points:
 
 - **`RequestTerminal: false`** — batch mode sends a command and captures stdout/stderr directly, without needing `Send`/`Receive` prompt matching.
-- **`ExecuteCommand`** — runs a single command and returns `Result.Stdout`, `Result.Stderr`, and `Result.rc` (exit code).
-- **`ForEach`** — iterates over the split output, one account name per line.
+- **`SetItem`** — pre-declares variables (`Stdout`, `Stderr`, `rc`) before `ExecuteCommand` uses them as output buffers. The validator requires all variables to be declared before use.
+- **`ExecuteCommand`** — runs a single command; `BufferName`, `StderrBufferName`, and `ExitStatusBufferName` specify where to store the output.
+- **`ForEach`** — iterates over the split output, one account name per line. `CollectionName` must be a plain variable name, so the split is computed first with `SetItem`.
 - **`WriteDiscoveredAccount`** — reports each account to SPP. This is how discovery populates the account list.
 - The `awk` filter keeps only real user accounts (UID ≥ 1000, active shell).
 
 Test discovery from SPP's web UI under **Asset Management > Discovery**, or trigger it with:
 
 ```powershell
-Invoke-SafeguardAssetAccountDiscovery -AssetToUse "TestHost"
+Invoke-SafeguardAssetAccountDiscovery -Asset "TestHost"
 ```
 
 ## Step 2: Extract Reusable Functions
@@ -187,7 +204,7 @@ The `Catch` block runs when any command in the `Try` block throws — whether fr
 For operations that take time (connecting, changing passwords, running discovery), status messages keep the SPP UI informed about progress:
 
 ```json
-{ "Status": { "Type": "Changing", "Percent": 10, "Message": { "Name": "ConnectingToHost", "Parameters": ["%Address%"] } } }
+{ "Status": { "Type": "Changing", "Percent": 10, "Message": { "Name": "AssetConnecting", "Parameters": ["%Address%"] } } }
 ```
 
 Add these at key points in your operations:
@@ -195,11 +212,10 @@ Add these at key points in your operations:
 ```json
 "ChangePassword": {
   "Do": [
-    { "Status": { "Type": "Changing", "Percent": 10, "Message": { "Name": "ConnectingToHost", "Parameters": ["%Address%"] } } },
+    { "Status": { "Type": "Changing", "Percent": 10, "Message": { "Name": "AssetConnecting", "Parameters": ["%Address%"] } } },
     { "Function": { "Name": "LoginSsh", "Parameters": ["%FuncUserName%", "%FuncPassword%"] } },
     { "Status": { "Type": "Changing", "Percent": 40, "Message": { "Name": "ChangingPassword", "Parameters": ["%AccountUserName%"] } } },
     ...password change logic...,
-    { "Status": { "Type": "Changing", "Percent": 90, "Message": { "Name": "DisconnectingFromHost" } } },
     { "Disconnect": { "ConnectionObjectName": "SshConnection" } },
     { "Return": { "Value": true } }
   ]
@@ -213,10 +229,12 @@ The `Percent` values give SPP a progress bar. The `Message` `Name` values are st
 Upload and run through all operations:
 
 ```powershell
-Import-SafeguardCustomPlatformScript -FilePath .\MyCompletePlatform.json
+# Create the platform (first time) or update the script (subsequent times)
+New-SafeguardCustomPlatform -Name "MyCompletePlatform" -ScriptFile .\MyCompletePlatform.json
+# Import-SafeguardCustomPlatformScript -PlatformToEdit "MyCompletePlatform" -ScriptFile .\MyCompletePlatform.json
 
 # CheckSystem
-Test-SafeguardAssetConnection -AssetToUse "TestHost" -ExtendedLogging
+Test-SafeguardAsset -AssetToTest "TestHost" -ExtendedLogging
 
 # CheckPassword
 Test-SafeguardAssetAccountPassword -AssetToUse "TestHost" -AccountToUse "testuser" -ExtendedLogging
@@ -235,8 +253,8 @@ Because your script contains these operations, SPP automatically derives feature
 
 | Flag | Set because |
 | --- | --- |
-| `PasswordFl` | `CheckPassword` is present |
-| `AccountPasswordFl` | `ChangePassword` is present |
+| `PasswordFeatureFl` | `CheckPassword` is present |
+| `AccountPasswordFl` | `AccountPassword` parameter (Secret type) is present |
 | `AccountDiscoveryFl` | `DiscoverAccounts` is present |
 
 You never configure these manually — they're derived from your script content. See [Feature Flags](../concepts/feature-flags.md) for the full list.

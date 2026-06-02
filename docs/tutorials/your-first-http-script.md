@@ -19,7 +19,7 @@ This is intentionally small. It is the quickest way to get from zero to a workin
 Before you start, make sure you have:
 
 - A target system with a REST API that supports authentication such as Basic Auth.
-- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](development-workflow.md).
+- An SPP appliance and the `safeguard-ps` PowerShell module. If you have not used that workflow before, read [Development Workflow](../guides/development-workflow.md).
 - Basic familiarity with JSON and REST APIs.
 
 ## Step 1: Create the Script Skeleton
@@ -117,7 +117,7 @@ This first example assumes HTTPS so you can see the simplest possible form. In t
     "RequestObjectName": "ApiRequest",
     "ResponseObjectName": "ApiResponse",
     "Verb": "GET",
-    "Url": "/api/status",
+    "Url": "/users",
     "Content": {
       "ContentType": "application/json"
     }
@@ -177,7 +177,7 @@ Here is the full `Do` block assembled together. This version uses `UseSsl` so th
       "RequestObjectName": "ApiRequest",
       "ResponseObjectName": "ApiResponse",
       "Verb": "GET",
-      "Url": "/api/status",
+      "Url": "/users",
       "Content": {
         "ContentType": "application/json"
       }
@@ -294,14 +294,22 @@ Add this operation:
     { "NewHttpRequest": { "ObjectName": "ChangeRequest" } },
     { "HttpAuth": { "RequestObjectName": "ChangeRequest", "Type": "Basic", "Credentials": { "Login": "%FuncUsername%", "Password": "%FuncPassword%" } } },
     {
+      "SetItem": {
+        "Name": "ChangeBody",
+        "Value": { "password": "%NewPassword%" },
+        "IsSecret": true
+      }
+    },
+    {
       "Request": {
         "RequestObjectName": "ChangeRequest",
         "ResponseObjectName": "ChangeResponse",
         "Verb": "PUT",
         "Url": "/api/users/%AccountUserName%/password",
+        "SubstitutionInUrl": true,
         "Content": {
-          "ContentType": "application/json",
-          "Body": "{\"password\": \"%NewPassword%\"}"
+          "ContentObjectName": "ChangeBody",
+          "ContentType": "application/json"
         }
       }
     },
@@ -328,13 +336,14 @@ The `Do` block follows the standard HTTP password-change pattern:
 1. Choose `https://` or `http://` with `UseSsl`.
 2. Create a new request object.
 3. Authenticate the request with Basic Auth using the service account.
-4. Send a `PUT` request to `/api/users/%AccountUserName%/password`.
-5. Treat `200` or `204` as success and throw a clear error for anything else.
+4. Build the JSON body with `SetItem` (marked `IsSecret` to keep it out of logs).
+5. Send a `PUT` request to `/api/users/%AccountUserName%/password` with `SubstitutionInUrl: true`.
+6. Treat `200` or `204` as success and throw a clear error for anything else.
 
-The JSON request body is constructed inline as a string:
+The request body is created using `SetItem` and referenced by `ContentObjectName`:
 
 ```json
-"Body": "{\"password\": \"%NewPassword%\"}"
+{ "SetItem": { "Name": "ChangeBody", "Value": { "password": "%NewPassword%" }, "IsSecret": true } }
 ```
 
 The `%NewPassword%` variable is expanded before the request is sent, so the API receives real JSON such as `{"password": "N3wP@ssw0rd!"}`. Many APIs use a slightly different shape, such as including both the old and new password in the body.
@@ -379,7 +388,7 @@ Here is the full script with all three operations in one file:
           "RequestObjectName": "ApiRequest",
           "ResponseObjectName": "ApiResponse",
           "Verb": "GET",
-          "Url": "/api/status",
+          "Url": "/users",
           "Content": {
             "ContentType": "application/json"
           }
@@ -475,14 +484,22 @@ Here is the full script with all three operations in one file:
       { "NewHttpRequest": { "ObjectName": "ChangeRequest" } },
       { "HttpAuth": { "RequestObjectName": "ChangeRequest", "Type": "Basic", "Credentials": { "Login": "%FuncUsername%", "Password": "%FuncPassword%" } } },
       {
+        "SetItem": {
+          "Name": "ChangeBody",
+          "Value": { "password": "%NewPassword%" },
+          "IsSecret": true
+        }
+      },
+      {
         "Request": {
           "RequestObjectName": "ChangeRequest",
           "ResponseObjectName": "ChangeResponse",
           "Verb": "PUT",
           "Url": "/api/users/%AccountUserName%/password",
+          "SubstitutionInUrl": true,
           "Content": {
-            "ContentType": "application/json",
-            "Body": "{\"password\": \"%NewPassword%\"}"
+            "ContentObjectName": "ChangeBody",
+            "ContentType": "application/json"
           }
         }
       },
@@ -516,12 +533,16 @@ If validation fails, fix the JSON before you upload anything.
 Once the platform exists, create a test asset and a test account:
 
 ```powershell
-New-SafeguardCustomPlatformAsset "My First HTTP Platform" "api.example.com" -ServiceAccountCredentialType Password -ServiceAccountName "admin"
+$svcPassword = Read-Host -AsSecureString "Enter service account password for admin"
+New-SafeguardCustomPlatformAsset "My First HTTP Platform" "api.example.com" `
+    -ServiceAccountCredentialType Password `
+    -ServiceAccountName "admin" `
+    -ServiceAccountPassword $svcPassword
 New-SafeguardAssetAccount "api.example.com" "testuser"
-Set-SafeguardAssetAccountPassword -AssetToUse "api.example.com" -AccountToUse "testuser"
+Set-SafeguardAssetAccountPassword -AssetToSet "api.example.com" -AccountToSet "testuser"
 ```
 
-In this example, `admin` is the service account used by `CheckSystem` and `ChangePassword`, and `testuser` is the managed account validated by `CheckPassword` and updated by `ChangePassword`.
+In this example, `admin` is the service account used by `CheckSystem` and `ChangePassword`, and `testuser` is the managed account validated by `CheckPassword` and updated by `ChangePassword`. The `-ServiceAccountPassword` parameter supplies the credential securely (SPP will prompt interactively if omitted).
 
 ## Step 9: Test It
 
@@ -553,7 +574,7 @@ During development, always run tests with `-ExtendedLogging` and review `Get-Saf
 
 The example uses generic placeholder endpoints. To make it work with a real target:
 
-- Change `/api/status`, `/api/users/me`, and `/api/users/%AccountUserName%/password` to the actual endpoints your API exposes.
+- Change `/users`, `/api/users/me`, and `/api/users/%AccountUserName%/password` to the actual endpoints your API exposes.
 - Switch the authentication type if needed, such as Bearer tokens or OAuth2. See the [HTTP Platforms Guide](../guides/http-platforms.md).
 - Add custom parameters for API-specific values such as a base path, tenant ID, or API version.
 - Adjust the password-change verb or request body if your API uses `POST`, expects the old password, or wraps the new password in a different JSON structure.

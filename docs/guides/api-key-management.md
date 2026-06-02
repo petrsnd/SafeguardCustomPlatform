@@ -68,7 +68,7 @@ The important values in an API key workflow are:
 | `FuncUserName` / `FuncPassword` | Service or admin credentials used to authenticate to the target system's management API. |
 | `Address` | Base address of the target API. |
 
-Safeguard automatically derives the **`ApiKeyFl`** feature flag when your script defines **`CheckApiKey`**. In practice, you almost always pair `CheckApiKey` with `ChangeApiKey` so the platform can both validate and rotate API credentials.
+Safeguard automatically derives the **`ApiKeyFeatureFl`** feature flag when your script defines **`CheckApiKey`**. In practice, you almost always pair `CheckApiKey` with `ChangeApiKey` so the platform can both validate and rotate API credentials.
 
 ## HTTP-based implementation pattern
 
@@ -386,23 +386,28 @@ Design your script so these cases produce a clear error message and never report
 
   ```json
   {
-    "Command": "Condition",
-    "Expression": "%verifyStatus% != 200",
-    "Do": [
-      {
-        "Command": "Log",
-        "Value": "New key verification failed (HTTP %verifyStatus%). Revoking new key and keeping old key active."
-      },
-      {
-        "Command": "Request",
-        "Url": "%BaseUrl%/api-keys/%newKeyId%",
-        "Method": "DELETE"
-      },
-      {
-        "Command": "Return",
-        "Value": "false"
+    "Condition": {
+      "If": "%verifyStatus% != 200",
+      "Then": {
+        "Do": [
+          {
+            "Log": { "Text": "New key verification failed (HTTP %verifyStatus%). Revoking new key and keeping old key active." }
+          },
+          {
+            "Request": {
+              "RequestObjectName": "AdminRequest",
+              "Verb": "DELETE",
+              "Url": "%BaseUrl%/api-keys/%newKeyId%",
+              "SubstitutionInUrl": true,
+              "ResponseObjectName": "RevokeResp"
+            }
+          },
+          {
+            "Return": { "Value": false }
+          }
+        ]
       }
-    ]
+    }
   }
   ```
 - **Handle target-specific limits.** Respect throttling, propagation delay, and eventual consistency behavior.

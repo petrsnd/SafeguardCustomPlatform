@@ -24,7 +24,7 @@ Connect-Safeguard -Appliance "spp.lab.local" -IdentityProvider local -Username "
 Custom platform development is an iterative loop:
 
 1. Write or edit your JSON script.
-2. Validate it locally with `Test-SafeguardCustomPlatformScript`.
+2. Validate it with `Test-SafeguardCustomPlatformScript` (requires an active SPP connection).
 3. Create or update the custom platform in SPP.
 4. Create a test asset that uses the custom platform.
 5. Add a test account.
@@ -134,7 +134,7 @@ Add an account that the platform can manage on the test asset.
 
 ```powershell
 New-SafeguardAssetAccount "Test Target" "testuser" -Description "Test account for development"
-Set-SafeguardAssetAccountPassword -AssetToUse "Test Target" -AccountToUse "testuser"
+Set-SafeguardAssetAccountPassword -AssetToSet "Test Target" -AccountToSet "testuser"
 ```
 
 `Set-SafeguardAssetAccountPassword` prompts for the password securely.
@@ -223,6 +223,6 @@ Change one thing at a time so each test result is easy to interpret.
 
 ## Next Steps
 
-- [Your First SSH Script](your-first-ssh-script.md) — Build a working SSH script step by step.
-- [Your First HTTP Script](your-first-http-script.md) — Build a working HTTP script step by step.
+- [Your First SSH Script](../tutorials/your-first-ssh-script.md) — Build a working SSH script step by step.
+- [Your First HTTP Script](../tutorials/your-first-http-script.md) — Build a working HTTP script step by step.
 - [Testing and Debugging](testing-and-debugging.md) — Deep dive into debugging techniques.

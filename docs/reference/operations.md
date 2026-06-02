@@ -4,22 +4,24 @@
 
 Operations are the named entry points in a custom platform script that SPP invokes when performing specific tasks. Each operation you include in your script tells SPP what your platform can do — SPP automatically derives [feature flags](../concepts/feature-flags.md) from the operations present.
 
-This page documents all 19 available operations across 8 categories.
+This page documents the operations available for custom platform scripts.
+
+> **Note:** Some operations defined in the operation type system (`DiscoverApiKeys`, `CheckHostKey`, `CreateAdminUser`) are not yet available for custom platforms. See the [GitHub issues](https://github.com/OneIdentity/SafeguardCustomPlatform/issues) for tracking.
 
 ## Quick Reference
 
 | Category | Operation | Credential Context | Feature Flag Set |
 | --- | --- | --- | --- |
-| [Connection](#checksystem) | `CheckSystem` | Service account | — |
-| [Password](#checkpassword) | `CheckPassword` | Managed account (+ service account for SSH) | `PasswordFl` |
-| [Password](#changepassword) | `ChangePassword` | Managed account (+ service account for SSH) | `AccountPasswordFl` |
-| [SSH Keys](#checksshkey) | `CheckSshKey` | Managed account (+ service account) | `SshKeyFl` |
-| [SSH Keys](#changesshkey) | `ChangeSshKey` | Managed account (+ service account) | `SshKeyFl` |
-| [SSH Keys](#discoversshHostkey) | `DiscoverSshHostKey` | None (asset-level) | `SshHostKeyFl` |
-| [SSH Keys](#retrievesshhostkey) | `RetrieveSshHostKey` | None (asset-level) | `SshHostKeyFl` |
+| [Connection](#checksystem) | `CheckSystem` | Service account | `PasswordFeatureFl` |
+| [Password](#checkpassword) | `CheckPassword` | Managed account (+ service account for SSH) | `PasswordFeatureFl` |
+| [Password](#changepassword) | `ChangePassword` | Managed account (+ service account for SSH) | `PasswordFeatureFl` |
+| [SSH Keys](#checksshkey) | `CheckSshKey` | Managed account (+ service account) | `SshKeyFeatureFl` |
+| [SSH Keys](#changesshkey) | `ChangeSshKey` | Managed account (+ service account) | `SshKeyFeatureFl` |
+| [SSH Keys](#discoversshhostkey) | `DiscoverSshHostKey` | None (asset-level) | `SshTransportFl` |
+| [SSH Keys](#retrievesshhostkey) | `RetrieveSshHostKey` | None (asset-level) | — |
 
-| [SSH Keys](#discoverauthorizedkeys) | `DiscoverAuthorizedKeys` | Managed account (+ service account) | `DiscoverSshKeyFl` |
-| [SSH Keys](#removeauthorizedkey) | `RemoveAuthorizedKey` | Managed account (+ service account) | `DiscoverSshKeyFl` |
+| [SSH Keys](#discoverauthorizedkeys) | `DiscoverAuthorizedKeys` | Managed account (+ service account) | `SshKeyFeatureFl` |
+| [SSH Keys](#removeauthorizedkey) | `RemoveAuthorizedKey` | Managed account (+ service account) | — |
 | [Discovery](#discoveraccounts) | `DiscoverAccounts` | Service account | `AccountDiscoveryFl` |
 | [Discovery](#discoverservices) | `DiscoverServices` | Service account | `ServiceDiscoveryFl` |
 | [JIT Access](#enableaccount) | `EnableAccount` | Service account + managed account | `SuspendRestoreAccountFl` |
@@ -27,8 +29,9 @@ This page documents all 19 available operations across 8 categories.
 | [JIT Access](#elevateaccount) | `ElevateAccount` | Service account + managed account | `ElevateDemoteAccountFl` |
 | [JIT Access](#demoteaccount) | `DemoteAccount` | Service account + managed account | `ElevateDemoteAccountFl` |
 | [Dependencies](#updatedependentsystem) | `UpdateDependentSystem` | Service account + dependent account | `DependentSystemFl` |
-| [API Keys](#checkapikey) | `CheckApiKey` | Service account + managed account | `ApiKeyFl` |
-| [API Keys](#changeapikey) | `ChangeApiKey` | Service account + managed account | `ApiKeyFl` |
+| [API Keys](#checkapikey) | `CheckApiKey` | Service account + managed account | `ApiKeyFeatureFl` |
+| [API Keys](#changeapikey) | `ChangeApiKey` | Service account + managed account | `ApiKeyFeatureFl` |
+| [Discovery](#discoverassets) | `DiscoverAssets` | Service account | — |
 | [Files](#checkfile) | `CheckFile` | Service account + managed account | — |
 | [Files](#changefile) | `ChangeFile` | Service account + managed account | — |
 
@@ -88,7 +91,7 @@ Tests connectivity to the target system using the asset's service account. This 
 | `HostKey` | String | Expected SSH host key fingerprint |
 | `UseSsl` | Boolean | Whether to use SSL/TLS |
 
-**Feature flags derived:** `PortFl`, `TimeoutFl`, `UseSslFl`, `CheckHostKeyFl`, `SshPortFl` (based on which optional parameters are declared)
+**Feature flags derived:** `PasswordFeatureFl`; additionally `CustomPortFl`, `TimeoutFl`, `UseSslFl`, `SshTransportFl` (based on which optional parameters are declared)
 
 **Return value:** `true` if connection succeeds; throw an error on failure.
 
@@ -106,7 +109,7 @@ Tests connectivity to the target system using the asset's service account. This 
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%", "Timeout": "%Timeout%" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%", "Timeout": "%Timeout%" } },
     { "Disconnect": {} },
     { "Return": { "Value": true } }
   ]
@@ -125,7 +128,8 @@ Tests connectivity to the target system using the asset's service account. This 
   "Do": [
     { "BaseAddress": { "Address": "https://%Address%" } },
     { "NewHttpRequest": { "ObjectName": "AuthReq" } },
-    { "Request": { "Verb": "Post", "Url": "/api/auth", "RequestObjectName": "AuthReq", "ResponseObjectName": "AuthResp", "Content": { "ContentType": "application/json", "Body": "{\"client_id\":\"%FuncUserName%\",\"client_secret\":\"%FuncPassword%\"}" } } },
+    { "SetItem": { "Name": "AuthBody", "Value": { "client_id": "%FuncUserName%", "client_secret": "%FuncPassword%" }, "IsSecret": true } },
+    { "Request": { "Verb": "Post", "Url": "/api/auth", "RequestObjectName": "AuthReq", "ResponseObjectName": "AuthResp", "Content": { "ContentObjectName": "AuthBody", "ContentType": "application/json" } } },
     { "Condition": { "If": "AuthResp.StatusCode.ToString().Equals(\"OK\")", "Then": { "Do": [{ "Return": { "Value": true } }] }, "Else": { "Do": [{ "Throw": { "Value": "Authentication failed" } }] } } }
   ]
 }
@@ -164,7 +168,7 @@ Verifies that the stored password for a managed account is still valid on the ta
 | `Port` | Integer | SSH port |
 | `Timeout` | Integer | Connection timeout |
 
-**Feature flags derived:** `PasswordFl` (requires `AccountPassword` parameter to be present)
+**Feature flags derived:** `PasswordFeatureFl` (from the operation); additionally `AccountPasswordFl` if `AccountPassword` parameter is present
 
 **Return value:** `true` if the password is valid; `false` or throw on failure.
 
@@ -180,7 +184,8 @@ Verifies that the stored password for a managed account is still valid on the ta
   "Do": [
     { "BaseAddress": { "Address": "https://%Address%" } },
     { "NewHttpRequest": { "ObjectName": "LoginReq" } },
-    { "Request": { "Verb": "Post", "Url": "/api/login", "RequestObjectName": "LoginReq", "ResponseObjectName": "LoginResp", "Content": { "ContentType": "application/json", "Body": "{\"username\":\"%AccountUserName%\",\"password\":\"%AccountPassword%\"}" } } },
+    { "SetItem": { "Name": "LoginBody", "Value": { "username": "%AccountUserName%", "password": "%AccountPassword%" }, "IsSecret": true } },
+    { "Request": { "Verb": "Post", "Url": "/api/login", "RequestObjectName": "LoginReq", "ResponseObjectName": "LoginResp", "Content": { "ContentObjectName": "LoginBody", "ContentType": "application/json" } } },
     { "Condition": { "If": "LoginResp.StatusCode.ToString().Equals(\"OK\")", "Then": { "Do": [{ "Return": { "Value": true } }] }, "Else": { "Do": [{ "Return": { "Value": false } }] } } }
   ]
 }
@@ -202,11 +207,11 @@ Verifies that the stored password for a managed account is still valid on the ta
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%", "Timeout": "%Timeout%" } },
-    { "Send": { "Text": "su - %AccountUserName%\n" } },
-    { "Receive": { "Regex": "[Pp]assword:" } },
-    { "Send": { "Text": "%AccountPassword%\n" } },
-    { "Receive": { "Regex": "\\$|#", "ResultVariable": "SuResult" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%", "Timeout": "%Timeout%" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "su - %AccountUserName%\n" } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "[Pp]assword:" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "%AccountPassword%\n", "ContainsSecret": true } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "\\$|#", "BufferName": "SuResult" } },
     { "Disconnect": {} },
     { "Return": { "Value": true } }
   ]
@@ -237,7 +242,7 @@ Changes the password for a managed account on the target system.
 | `Port` | Integer | SSH port |
 | `Timeout` | Integer | Connection timeout |
 
-**Feature flags derived:** `AccountPasswordFl` (requires both `AccountPassword` and `NewPassword` parameters)
+**Feature flags derived:** `PasswordFeatureFl` (from the operation); additionally `AccountPasswordFl` if `AccountPassword` parameter is present
 
 **Return value:** `true` if the password was changed successfully; throw on failure.
 
@@ -257,7 +262,8 @@ Changes the password for a managed account on the target system.
     { "Function": { "Name": "Login", "Parameters": ["%Address%", "%FuncUserName%", "%FuncPassword%"], "ResultVariable": "LoginOk" } },
     { "Condition": { "If": "!LoginOk", "Then": { "Do": [{ "Throw": { "Value": "Service account login failed" } }] } } },
     { "NewHttpRequest": { "ObjectName": "ChangeReq" } },
-    { "Request": { "Verb": "Put", "Url": "/api/users/%AccountUserName%/password", "RequestObjectName": "ChangeReq", "ResponseObjectName": "ChangeResp", "Content": { "ContentType": "application/json", "Body": "{\"new_password\":\"%NewPassword%\"}" } } },
+    { "SetItem": { "Name": "ChangeBody", "Value": { "new_password": "%NewPassword%" }, "IsSecret": true } },
+    { "Request": { "Verb": "Put", "Url": "/api/users/%AccountUserName%/password", "SubstitutionInUrl": true, "RequestObjectName": "ChangeReq", "ResponseObjectName": "ChangeResp", "Content": { "ContentObjectName": "ChangeBody", "ContentType": "application/json" } } },
     { "Condition": { "If": "ChangeResp.StatusCode.ToString().Equals(\"OK\")", "Then": { "Do": [{ "Return": { "Value": true } }] }, "Else": { "Do": [{ "Throw": { "Value": "Password change failed: %ChangeResp.StatusCode%" } }] } } }
   ]
 }
@@ -280,13 +286,13 @@ Changes the password for a managed account on the target system.
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%", "Timeout": "%Timeout%" } },
-    { "Send": { "Text": "sudo passwd %AccountUserName%\n" } },
-    { "Receive": { "Regex": "[Nn]ew.*[Pp]assword:" } },
-    { "Send": { "Text": "%NewPassword%\n" } },
-    { "Receive": { "Regex": "[Rr]etype|[Rr]e-enter|[Cc]onfirm" } },
-    { "Send": { "Text": "%NewPassword%\n" } },
-    { "Receive": { "Regex": "success|updated" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%", "Timeout": "%Timeout%" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "sudo passwd %AccountUserName%\n" } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "[Nn]ew.*[Pp]assword:" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "%NewPassword%\n", "ContainsSecret": true } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "[Rr]etype|[Rr]e-enter|[Cc]onfirm" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "%NewPassword%\n", "ContainsSecret": true } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "success|updated" } },
     { "Disconnect": {} },
     { "Return": { "Value": true } }
   ]
@@ -317,7 +323,7 @@ Verifies that the stored SSH public key for a managed account is present in the 
 | `AccountUserName` | String | Account whose authorized keys to check |
 | `OldSshKey` | String | The SSH public key expected to be present |
 
-**Feature flags derived:** `SshKeyFl`
+**Feature flags derived:** `SshKeyFeatureFl`
 
 **Return value:** `true` if the key is found in the account's authorized keys; `false` otherwise.
 
@@ -337,8 +343,8 @@ Verifies that the stored SSH public key for a managed account is present in the 
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%", "Timeout": "%Timeout%" } },
-    { "ExecuteCommand": { "Command": "grep -F '%OldSshKey%' /home/%AccountUserName%/.ssh/authorized_keys", "ResultVariable": "GrepResult" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%", "Timeout": "%Timeout%" } },
+    { "ExecuteCommand": { "ConnectionObjectName": "ConnectSsh", "Command": "grep -F '%OldSshKey%' /home/%AccountUserName%/.ssh/authorized_keys", "BufferName": "GrepResult" } },
     { "Condition": { "If": "GrepResult.Contains(OldSshKey)", "Then": { "Do": [{ "Return": { "Value": true } }] }, "Else": { "Do": [{ "Return": { "Value": false } }] } } }
   ]
 }
@@ -367,7 +373,7 @@ Replaces an SSH key in a managed account's authorized keys store — adding the 
 | `NewSshPrivateKey` | Secret | New private key (if script needs it for verification) |
 | `NewSshKeyType` | String | Key type: RSA, ED25519, ECDSA |
 
-**Feature flags derived:** `SshKeyFl`
+**Feature flags derived:** `SshKeyFeatureFl`
 
 **Return value:** `true` if the key was rotated successfully.
 
@@ -390,9 +396,9 @@ Retrieves the SSH host key fingerprint of the target system during asset creatio
 | `Port` | Integer | SSH port (default 22) |
 | `Timeout` | Integer | Connection timeout |
 
-**Feature flags derived:** `SshHostKeyFl`
+**Feature flags derived:** `SshTransportFl`
 
-**Return value:** The host key fingerprint string. Uses the built-in `DiscoverSshHostKey` command.
+**Return value:** The operation returns a boolean `PlatformOperationResult(true/false)`. The discovered host key itself is stored in the variable named by `HostKeyVariableName` on the `DiscoverSshHostKey` command.
 
 **Example:**
 
@@ -404,7 +410,7 @@ Retrieves the SSH host key fingerprint of the target system during asset creatio
     { "Address": { "Type": "String", "Required": true } }
   ],
   "Do": [
-    { "DiscoverSshHostKey": { "NetworkAddress": "%Address%", "Port": "%Port%", "Timeout": "%Timeout%" } },
+    { "DiscoverSshHostKey": { "HostKeyVariableName": "DiscoveredKey", "NetworkAddress": "%Address%", "Port": "%Port%", "Timeout": "%Timeout%" } },
     { "Return": { "Value": true } }
   ]
 }
@@ -418,15 +424,9 @@ Retrieves the SSH host key fingerprint of the target system during asset creatio
 
 ### RetrieveSshHostKey
 
-Retrieves the SSH host key from a system that is already configured as an asset.
+> ⚠️ **Not supported for custom platforms.** The Scriptable engine does not allow custom platform scripts to implement this operation. Use `DiscoverSshHostKey` instead.
 
-**Triggered by:** Retrieve SSH Host Key task, scheduled host key refresh.
-
-**Required parameters:** Same as `DiscoverSshHostKey`.
-
-**Feature flags derived:** `SshHostKeyFl` (same flag as `DiscoverSshHostKey`)
-
-**Implementation:** Typically identical to `DiscoverSshHostKey`. Many scripts share the same implementation for both.
+**Feature flags derived:** `SshTransportFl` (same flag as `DiscoverSshHostKey`)
 
 ### DiscoverAuthorizedKeys
 
@@ -442,7 +442,7 @@ Discovers all SSH public keys configured in a managed account's authorized keys 
 | `FuncUserName` | String | Service account for SSH login |
 | `AccountUserName` | String | Account whose authorized keys to enumerate |
 
-**Feature flags derived:** `DiscoverSshKeyFl`
+**Feature flags derived:** `SshKeyFeatureFl`
 
 **Return value:** Reports discovered keys back to SPP. The script reads the authorized_keys file and reports each key found.
 
@@ -461,7 +461,7 @@ Removes a specific SSH public key from a managed account's authorized keys store
 | `AccountUserName` | String | Account whose key to remove |
 | `OldSshKey` | String | The specific key to remove |
 
-**Feature flags derived:** `DiscoverSshKeyFl` (same flag as `DiscoverAuthorizedKeys`)
+**Feature flags derived:** None. Unlike `DiscoverAuthorizedKeys`, this operation does not contribute to `SshKeyFeatureFl`.
 
 **Return value:** `true` if the key was removed successfully.
 
@@ -471,7 +471,7 @@ Removes a specific SSH public key from a managed account's authorized keys store
 
 ### DiscoverAccounts
 
-Discovers accounts on the target system that SPP can manage. Returns a list of account names found on the system.
+Discovers accounts on the target system that SPP can manage. Reports discovered accounts using `WriteDiscoveredAccount` commands.
 
 **Triggered by:** Account Discovery job (scheduled or manual).
 
@@ -492,7 +492,7 @@ Discovers accounts on the target system that SPP can manage. Returns a list of a
 
 **Feature flags derived:** `AccountDiscoveryFl`
 
-**Return value:** Reports discovered accounts back to SPP. For SSH platforms, typically parses `/etc/passwd` or uses `getent passwd`. For HTTP platforms, calls an API that lists users.
+**Return value:** Boolean operation result. Discovered accounts are reported to SPP through individual `WriteDiscoveredAccount` commands rather than being returned directly. For SSH platforms, typically parses `/etc/passwd` or uses `getent passwd`. For HTTP platforms, calls an API that lists users.
 
 **Example (SSH):**
 
@@ -507,10 +507,13 @@ Discovers accounts on the target system that SPP can manage. Returns a list of a
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%" } },
-    { "ExecuteCommand": { "Command": "getent passwd | cut -d: -f1", "ResultVariable": "AccountList" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%" } },
+    { "ExecuteCommand": { "ConnectionObjectName": "ConnectSsh", "Command": "getent passwd | cut -d: -f1", "BufferName": "AccountList" } },
+    { "ForEach": { "CollectionName": "%AccountList.Split('\n')%", "ElementName": "AcctName", "Body": { "Do": [
+      { "WriteDiscoveredAccount": { "Name": "%AcctName%" } }
+    ] } } },
     { "Disconnect": {} },
-    { "Return": { "Value": "%AccountList%" } }
+    { "Return": { "Value": true } }
   ]
 }
 ```
@@ -532,6 +535,68 @@ Discovers services (Windows services, systemd units, etc.) running on the target
 **Feature flags derived:** `ServiceDiscoveryFl`
 
 **Return value:** Reports discovered services back to SPP, including which accounts they run under.
+
+### DiscoverAssets
+
+Discovers assets (virtual machines, containers, network devices, etc.) on a target system that SPP can manage. Reports discovered assets using `WriteDiscoveredAsset` commands.
+
+> ⚠️ **Known limitation:** Asset discovery scheduling in the SPP UI may not be enabled for custom platforms even when this operation is present. See [issue #73](https://github.com/OneIdentity/SafeguardCustomPlatform/issues/73).
+
+**Triggered by:** Asset Discovery job (scheduled or manual).
+
+**Required parameters:**
+
+| Parameter | Type | Purpose |
+| --- | --- | --- |
+| `Address` | String | Network address of the target system |
+| `FuncUserName` | String | Service account for authentication |
+| `FuncPassword` | Secret | Service account password |
+| `DiscoveryQuery` | Object | Filter criteria provided by SPP (required for asset discovery to be enabled) |
+
+**Common optional parameters:**
+
+| Parameter | Type | Purpose |
+| --- | --- | --- |
+| `AssetName` | String | Name of the asset running the discovery |
+| `Port` | Integer | Connection port |
+| `Timeout` | Integer | Operation timeout in seconds |
+
+**Feature flags derived:** None directly, but SPP enables asset discovery for the platform only when the `DiscoverAssets` operation includes a `DiscoveryQuery` parameter of type `Object`.
+
+**Return value:** Boolean operation result. Discovered assets are reported to SPP through individual `WriteDiscoveredAsset` commands. Each `WriteDiscoveredAsset` call accepts:
+
+| Field | Type | Required | Purpose |
+| --- | --- | --- | --- |
+| `Name` | String | Yes | Name of the discovered asset |
+| `Description` | String | No | Description of the asset |
+| `GuestOperatingSystem` | String | No | Operating system running on the asset |
+| `Running` | Boolean | No | Whether the asset is currently powered on |
+| `IpList` | String or Array | No | IP address(es) of the asset |
+
+**Example (SSH):**
+
+```json
+"DiscoverAssets": {
+  "Parameters": [
+    { "AssetName": { "Type": "String", "Required": false, "DefaultValue": "" } },
+    { "Address": { "Type": "String", "Required": true } },
+    { "Port": { "Type": "Integer", "Required": false, "DefaultValue": 22 } },
+    { "Timeout": { "Type": "Integer", "Required": false, "DefaultValue": 60 } },
+    { "FuncUserName": { "Type": "String", "Required": true } },
+    { "FuncPassword": { "Type": "Secret", "Required": false } },
+    { "DiscoveryQuery": { "Type": "Object", "Required": true } }
+  ],
+  "Do": [
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%" } },
+    { "ExecuteCommand": { "ConnectionObjectName": "ConnectSsh", "Command": "virsh list --all --name", "BufferName": "VmList" } },
+    { "ForEach": { "CollectionName": "%VmList.Split('\n')%", "ElementName": "VmName", "Body": { "Do": [
+      { "WriteDiscoveredAsset": { "Name": "%VmName%", "Running": true } }
+    ] } } },
+    { "Disconnect": {} },
+    { "Return": { "Value": true } }
+  ]
+}
+```
 
 ---
 
@@ -644,12 +709,12 @@ Updates a dependent system after a password change on the primary account. For e
 
 | Parameter | Type | Purpose |
 | --- | --- | --- |
-| `DependentCommand` | String | Custom command to execute (triggers `CustomDependencyFl`) |
+| `DependentCommand` | String | Custom command to execute (triggers `CustomDependencyUpdateFl`) |
 | `CommandArguments` | String | Arguments for the command |
 | `StdinArguments` | Array | Stdin arguments piped to the command |
 | `ReportExitStatus` | Boolean | Whether to report exit code in results |
 
-**Feature flags derived:** `DependentSystemFl`; additionally `CustomDependencyFl` if `DependentCommand` parameter is present.
+**Feature flags derived:** `DependentSystemFl`; additionally `CustomDependencyUpdateFl` if `DependentCommand` parameter is present.
 
 **Return value:** `true` if the dependent system was updated successfully.
 
@@ -678,7 +743,7 @@ Verifies that the stored API key for a managed account is still valid.
 | `AccountUserName` | String | The account whose API key to verify |
 | `AccountPassword` | Secret | The API key to verify |
 
-**Feature flags derived:** `ApiKeyFl`
+**Feature flags derived:** `ApiKeyFeatureFl`
 
 **Return value:** `true` if the API key is valid; `false` or throw if invalid.
 
@@ -720,7 +785,7 @@ Rotates an API key — generates a new key and invalidates the old one.
 | `AccountPassword` | Secret | The current API key |
 | `NewPassword` | Secret | The new API key (generated by SPP or returned by the API) |
 
-**Feature flags derived:** `ApiKeyFl`
+**Feature flags derived:** `ApiKeyFeatureFl`
 
 **Return value:** `true` if the key was rotated successfully.
 
@@ -788,24 +853,21 @@ SPP automatically derives these feature flags when you upload a script. You neve
 
 | Flag | How It's Derived |
 | --- | --- |
-| `PasswordFl` | `CheckPassword` operation with `AccountPassword` parameter |
-| `AccountPasswordFl` | `ChangePassword` operation with both `AccountPassword` and `NewPassword` parameters |
-| `SshKeyFl` | `CheckSshKey` operation present |
-| `SshHostKeyFl` | `DiscoverSshHostKey` operation present |
-| `DiscoverSshKeyFl` | `DiscoverAuthorizedKeys` operation present |
+| `PasswordFeatureFl` | Any of: `CheckSystem`, `CheckPassword`, `ChangePassword`, `EnableAccount`, `DisableAccount`, `ElevateAccount`, `DemoteAccount`, `DiscoverSshHostKey`, `RetrieveSshHostKey`, `UpdateDependentSystem` |
+| `AccountPasswordFl` | `AccountPassword` parameter (Secret type) present |
+| `SshKeyFeatureFl` | `CheckSshKey`, `ChangeSshKey`, or `DiscoverAuthorizedKeys` operation present |
+| `SshTransportFl` | `DiscoverSshHostKey` operation, or SSH-related parameters: `CheckHostKey`, `HostKey`, `UserKey`, `NewSshPrivateKey`, `NewSshKeyComment`, `NewSshKey`, `OldSshKey` |
 | `AccountDiscoveryFl` | `DiscoverAccounts` operation present |
 | `ServiceDiscoveryFl` | `DiscoverServices` operation present |
 | `SuspendRestoreAccountFl` | `EnableAccount` or `DisableAccount` operation present |
 | `ElevateDemoteAccountFl` | `ElevateAccount` or `DemoteAccount` operation present |
 | `DependentSystemFl` | `UpdateDependentSystem` operation present |
-| `CustomDependencyFl` | `UpdateDependentSystem` with `DependentCommand` parameter |
-| `ApiKeyFl` | `CheckApiKey` operation present |
+| `CustomDependencyUpdateFl` | `UpdateDependentSystem` with `DependentCommand` parameter |
+| `ApiKeyFeatureFl` | `CheckApiKey` or `ChangeApiKey` operation present |
 | `FileFeatureFl` | Always `true` (hardcoded for all platforms) |
-| `PortFl` | Any operation with `Port` parameter |
-| `SshPortFl` | Any operation with `SshPort` parameter |
-| `UseSslFl` | Any operation with `UseSsl` parameter |
-| `TimeoutFl` | Any operation with `Timeout` parameter |
-| `CheckHostKeyFl` | Any operation with `CheckHostKey` parameter |
+| `CustomPortFl` | Any operation with `Port` parameter (Integer type) |
+| `UseSslFl` | Any operation with `UseSsl` parameter (Boolean type) |
+| `TimeoutFl` | Any operation with `Timeout` parameter (Integer type) |
 
 For a detailed guide on how feature flags affect platform behavior in the SPP UI, see [Feature Flags Guide](../concepts/feature-flags.md).
 

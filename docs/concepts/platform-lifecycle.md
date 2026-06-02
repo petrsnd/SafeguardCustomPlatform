@@ -30,7 +30,11 @@ Upload your script to SPP using either method:
 
 **PowerShell (recommended for development):**
 ```powershell
-Import-SafeguardCustomPlatformScript -FilePath .\MyPlatform.json
+# Create a new custom platform with a script
+New-SafeguardCustomPlatform -Name "MyPlatform" -ScriptFile .\MyPlatform.json
+
+# Or update an existing platform's script
+Import-SafeguardCustomPlatformScript -PlatformToEdit "MyPlatform" -ScriptFile .\MyPlatform.json
 ```
 
 **Web UI:**
@@ -45,9 +49,9 @@ SPP validates the script immediately. If validation fails, you get an error mess
 Testing happens in two stages:
 
 ### Local Validation
-Use the [TestTool](../../tools/TestTool.ps1) to validate JSON structure before uploading:
+Use `Test-SafeguardCustomPlatformScript` to validate the script before uploading (requires an active SPP connection):
 ```powershell
-.\tools\TestTool.ps1 -ScriptFile .\MyPlatform.json
+Test-SafeguardCustomPlatformScript ".\MyPlatform.json"
 ```
 
 ### Live Testing
@@ -59,7 +63,7 @@ After upload, test against a real (non-production) target:
 
 ```powershell
 # Test connectivity
-Test-SafeguardAssetConnection -AssetToUse "TestHost" -ExtendedLogging
+Test-SafeguardAsset -AssetToTest "TestHost" -ExtendedLogging
 
 # Test password check
 Test-SafeguardAssetAccountPassword -AssetToUse "TestHost" -AccountToUse "testuser" -ExtendedLogging

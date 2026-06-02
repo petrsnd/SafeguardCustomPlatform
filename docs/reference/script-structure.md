@@ -13,9 +13,11 @@ Every script is a JSON object with the following possible top-level keys:
 | `Id` | Yes | Unique identifier for the platform. SPP uses this internally. |
 | `BackEnd` | Yes | Always `"Scriptable"`. |
 | `Meta` | No | Free-form object for documentation (author, version, notes). SPP ignores it. |
-| `Imports` | No | Array of built-in function library names to include. |
+| `Imports` | No | Array of built-in function library names to include. `Import` is also accepted as an alias, and a single string value is accepted in addition to an array. |
 | `Functions` | No | Array of reusable function definitions callable from operations. |
 | *Operations* | At least one | One or more named operations (see [Operations](#operations) below). |
+
+> **Note:** Any unrecognized top-level property that is not one of the keys above is treated as a named function block by the parser.
 
 ### Minimal Example
 
@@ -131,18 +133,24 @@ For the complete list of reserved parameter names and their auto-population rule
 
 ## Parameters
 
-Each parameter definition is a single-key object in the `Parameters` array:
+The most common parameter definition style is a single-key object in the `Parameters` array:
 
 ```json
 { "AccountUserName": { "Type": "String", "Required": true } }
+```
+
+The parser also accepts objects with an explicit `Name` property as an alternative syntax:
+
+```json
+{ "Name": "AccountUserName", "Type": "String", "Required": true }
 ```
 
 ### Parameter Properties
 
 | Property | Required | Description |
 | --- | --- | --- |
-| `Type` | Yes | Data type: `String`, `Integer`, `Secret`, or `Boolean` |
-| `Required` | No | Whether SPP must supply a value. Defaults to `false`. |
+| `Type` | Yes | Data type: `String`, `Integer`, `Float`, `Boolean`, `Secret`, `Array`, `Object`, `Email`, or `Null`. Lowercase equivalents (`string`, `integer`, etc.) are also accepted. |
+| `Required` | No | Whether SPP must supply a value. Defaults to `true`. |
 | `DefaultValue` | No | Value used when SPP does not supply one. |
 | `Description` | No | Human-readable description (shown in SPP UI for custom parameters). |
 
@@ -150,10 +158,15 @@ Each parameter definition is a single-key object in the `Parameters` array:
 
 | Type | JSON representation | Notes |
 | --- | --- | --- |
-| `String` | `"value"` | General text. |
+| `Null` | `null` | Explicitly empty value. |
+| `Boolean` | `true` / `false` | Flags and toggles. |
 | `Integer` | `30` | Whole numbers (often used for timeouts and ports). |
+| `Float` | `3.14` | Floating-point numbers. |
+| `String` | `"value"` | General text. |
+| `Array` | `[...]` | Ordered collection of values. |
+| `Object` | `{...}` | Key-value structure. |
 | `Secret` | `"value"` | Treated as sensitive — masked in logs. Use for passwords, keys, tokens. |
-| `Boolean` | `true` / `false` | Flags and toggles. Case-insensitive in scripts (`boolean` also works). |
+| `Email` | `"user@example.com"` | Email address string. |
 
 ### Reserved vs Custom Parameters
 
@@ -166,9 +179,9 @@ The `Do` array is an ordered list of commands. Each command is a single-key obje
 
 ```json
 "Do": [
-  { "Connect": { "Address": "%Address%", "Port": "%Port%", ... } },
-  { "Send": { "Text": "show version\n" } },
-  { "Receive": { "Regex": ".*#" } },
+  { "Connect": { "NetworkAddress": "%Address%", "Port": "%Port%", "ConnectionObjectName": "MyConn", ... } },
+  { "Send": { "ConnectionObjectName": "MyConn", "Buffer": "show version\n" } },
+  { "Receive": { "ConnectionObjectName": "MyConn", "ExpectRegex": ".*#", "BufferName": "Output" } },
   { "Return": { "Value": true } }
 ]
 ```
@@ -318,7 +331,8 @@ Here is a complete script showing all structural elements together:
       "Do": [
         { "BaseAddress": { "Address": "https://%Address%" } },
         { "NewHttpRequest": { "ObjectName": "LoginReq" } },
-        { "Request": { "Verb": "Post", "Url": "/api/login", "RequestObjectName": "LoginReq", "ResponseObjectName": "LoginResp", "Content": { "ContentType": "application/json", "Body": "{\"username\":\"%UserName%\",\"password\":\"%Password%\"}" } } },
+        { "SetItem": { "Name": "LoginBody", "Value": "{\"username\":\"%UserName%\",\"password\":\"%Password%\"}", "IsSecret": true } },
+        { "Request": { "Verb": "Post", "Url": "/api/login", "RequestObjectName": "LoginReq", "ResponseObjectName": "LoginResp", "Content": { "ContentType": "application/json", "ContentObjectName": "LoginBody" } } },
         { "Condition": { "If": "LoginResp.StatusCode.ToString().Equals(\"OK\")", "Then": { "Do": [ { "Return": { "Value": true } } ] }, "Else": { "Do": [ { "Return": { "Value": false } } ] } } }
       ]
     }
@@ -330,7 +344,7 @@ Here is a complete script showing all structural elements together:
 
 1. **JSON must be valid.** Use a JSON validator during development. SPP rejects scripts with syntax errors on upload.
 2. **Operations you include determine platform capabilities.** SPP derives feature flags automatically — you never set them manually.
-3. **Parameter names are case-sensitive.** `AccountUserName` and `accountusername` are different parameters.
+3. **Variable names are case-insensitive.** `AccountUserName` and `accountusername` resolve to the same variable. However, parameter *type names* (like `String`, `Secret`) are case-sensitive in the JSON definition.
 4. **`Secret` parameters are masked in logs.** Always use type `Secret` for passwords, keys, and tokens.
 5. **Order matters in `Do` blocks.** Commands execute sequentially, top to bottom.
 6. **Functions are defined once, called many times.** Extract repeated logic (login flows, pagination) into functions.

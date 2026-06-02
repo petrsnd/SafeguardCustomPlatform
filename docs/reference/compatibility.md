@@ -21,16 +21,16 @@ This matrix is based on the current repository documentation, especially the [Op
 | --- | :---: | :---: | --- |
 | Basic operations: `CheckSystem`, `CheckPassword`, `ChangePassword` | 🆕 | ✅ | Core password-management building blocks documented across the repo. |
 | Account discovery: `DiscoverAccounts` | 🆕 | ✅ | Enables `AccountDiscoveryFl`. |
-| SSH key validation and rotation: `CheckSshKey`, `ChangeSshKey` | 🆕 | ✅ | Enables `SshKeyFl`. |
-| Authorized key discovery: `DiscoverAuthorizedKeys` | 🆕 | ✅ | Enables `DiscoverSshKeyFl`. |
-| Host key discovery: `DiscoverSshHostKey` | 🆕 | ✅ | Enables `SshHostKeyFl`. |
+| SSH key validation and rotation: `CheckSshKey`, `ChangeSshKey` | 🆕 | ✅ | Enables `SshKeyFeatureFl`. |
+| Authorized key discovery: `DiscoverAuthorizedKeys` | 🆕 | ✅ | Enables `SshKeyFeatureFl`. |
+| Host key discovery: `DiscoverSshHostKey` | 🆕 | ✅ | Enables `SshTransportFl`. |
 | Account enable/disable: `EnableAccount`, `DisableAccount` | 🆕 | ✅ | Enables `SuspendRestoreAccountFl`. |
 | JIT elevation/demotion: `ElevateAccount`, `DemoteAccount` | 🆕 | ✅ | Enables `ElevateDemoteAccountFl`. |
 | Dependent systems: `UpdateDependentSystem` | 🆕 | ✅ | Enables `DependentSystemFl`. |
 | Custom dependency commands: `DependentCommand`, `ExecuteDependentCommand` | 🆕 | ✅ | Treat `SPP 6.0-7.3` as a placeholder baseline; verify the exact minimum against release notes if you target older appliances. |
 | File management: `CheckFile`, `ChangeFile` | 🆕 | ✅ | `FileFeatureFl` is always true, but the operations still determine whether useful file workflows exist. |
 | Service discovery: `DiscoverServices` | 🆕 | ✅ | Enables `ServiceDiscoveryFl`. |
-| API key management: `CheckApiKey`, `ChangeApiKey` | 🆕 | ✅ | Enables `ApiKeyFl`. Verify the exact minimum release if your environment is older than current 6.x/7.x guidance. |
+| API key management: `CheckApiKey`, `ChangeApiKey` | 🆕 | ✅ | Enables `ApiKeyFeatureFl`. Verify the exact minimum release if your environment is older than current 6.x/7.x guidance. |
 | Import libraries: `Imports` | 🆕 | ✅ | SSH-only system libraries. Customers cannot upload their own import libraries. |
 | Custom parameters | 🆕 | ✅ | Non-reserved parameter names surface in **Custom Script Parameters** on the asset. |
 | Extended logging: `?extendedLogging=true`, PowerShell `-ExtendedLogging` | 🆕 | ✅ | Development and troubleshooting aid; treat the logs as sensitive. |
@@ -42,7 +42,7 @@ This matrix is based on the current repository documentation, especially the [Op
 > The matrix above is about **what the SPP appliance understands**, not just what the JSON schema in this repository accepts.
 
 - `FileFeatureFl` is always enabled for custom platforms, even if you do not implement `CheckFile` or `ChangeFile`.
-- `CustomDependencyFl` is set only when `UpdateDependentSystem` declares the reserved `DependentCommand` parameter.
+- `CustomDependencyUpdateFl` is set only when `UpdateDependentSystem` declares the reserved `DependentCommand` parameter.
 - `ExecuteDependentCommand` is a helper command used inside `UpdateDependentSystem`; it is not a separate top-level operation.
 - `ExecuteCommand` requires SSH batch mode (`RequestTerminal: false`) and is the clearest version-specific scripting feature called out in this repo.
 - Import libraries are built-in system libraries maintained as part of SPP. They are useful for SSH platforms, but there are no HTTP import libraries documented here.
@@ -61,5 +61,5 @@ This matrix is based on the current repository documentation, especially the [Op
 - [Operations Reference](operations.md)
 - [Platform Feature Flags](../concepts/feature-flags.md)
 - [Script Structure Reference](script-structure.md)
-- [System Import Libraries Reference](reference/imports.md)
+- [System Import Libraries Reference](imports.md)
 - [Testing and Debugging](../guides/testing-and-debugging.md)

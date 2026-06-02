@@ -56,7 +56,7 @@ Use it when your platform needs to do one or more of these things on a downstrea
 The operation usually runs with:
 
 - the dependent asset connection context (`Address`, `FuncUserName`, `FuncPassword`)
-- the dependent account context (`DependentAccountUserName`, `DependentAccountPassword`, `DependentNewPassword`)
+- the dependent account context (`DependentUsername`, `DependentPassword`)
 - optional dependency metadata such as alternate username, account type, namespace, or custom command settings
 
 ## Feature flags
@@ -66,9 +66,9 @@ SPP derives dependency-related feature flags from the script content:
 | Flag | How it is set | Why it matters |
 | --- | --- | --- |
 | `DependentSystemFl` | Declare `UpdateDependentSystem` | Tells SPP the platform supports dependent-system updates. |
-| `CustomDependencyFl` | Declare `DependentCommand` inside `UpdateDependentSystem` | Tells SPP the platform can receive a Change Profile custom dependency command. |
+| `CustomDependencyUpdateFl` | Declare `DependentCommand` inside `UpdateDependentSystem` | Tells SPP the platform can receive a Change Profile custom dependency command. |
 
-For the exact mapping, see [Platform Feature Flags](feature-flags.md) and [Operations Reference](../reference/operations.md#updatedependentsystem).
+For the exact mapping, see [Platform Feature Flags](../concepts/feature-flags.md) and [Operations Reference](../reference/operations.md#updatedependentsystem).
 
 ## Reserved parameters you will use
 
@@ -78,9 +78,8 @@ The full list lives in [Reserved Parameters](../reference/reserved-parameters.md
 
 | Parameter | Purpose |
 | --- | --- |
-| `DependentAccountUserName` | Username of the dependent account being updated. |
-| `DependentAccountPassword` | Current credential currently in use on the dependent side. |
-| `DependentNewPassword` | New password SPP wants the dependent system to start using. |
+| `DependentUsername` | Username of the dependent account being updated. |
+| `DependentPassword` | New password SPP wants the dependent system to start using. |
 
 ### Dependent SSH key context
 
@@ -120,8 +119,8 @@ This example shows the common SSH batch-mode pattern: connect to the dependent a
       { "FuncPassword": { "Type": "Secret", "Required": false } },
       { "CheckHostKey": { "Type": "Boolean", "Required": false, "DefaultValue": true } },
       { "HostKey": { "Type": "String", "Required": false } },
-      { "DependentAccountUserName": { "Type": "String", "Required": true } },
-      { "DependentNewPassword": { "Type": "Secret", "Required": true } },
+      { "DependentUsername": { "Type": "String", "Required": true } },
+      { "DependentPassword": { "Type": "Secret", "Required": true } },
       { "DependentCommand": { "Type": "String", "Required": false } },
       { "CommandArguments": { "Type": "String", "Required": false } },
       { "StdinArguments": { "Type": "Array", "Required": false } },
@@ -221,7 +220,7 @@ A helper script updates the config file, then the platform restarts the service.
 
 Typical examples include `.env` files, YAML configuration, or application-specific secrets files. A helper command might:
 
-- replace the old password with `%DependentNewPassword%`
+- replace the old password with `%DependentPassword%`
 - write a new connection string that embeds the updated secret
 - reload or restart the process afterward
 
@@ -230,8 +229,8 @@ A common Change Profile command for this looks like:
 ```json
 {
   "DependentCommand": "/usr/local/bin/update-app-secret",
-  "CommandArguments": "\"%DependentAccountUserName%\" \"/etc/my-app/appsettings.json\"",
-  "StdinArguments": ["%DependentNewPassword%"],
+  "CommandArguments": "\"%DependentUsername%\" \"/etc/my-app/appsettings.json\"",
+  "StdinArguments": ["%DependentPassword%"],
   "ReportExitStatus": true
 }
 ```
@@ -256,33 +255,47 @@ This example pushes the new password into a downstream configuration API.
       { "UseSsl": { "Type": "Boolean", "Required": false, "DefaultValue": true } },
       { "FuncUserName": { "Type": "String", "Required": true } },
       { "FuncPassword": { "Type": "Secret", "Required": true } },
-      { "DependentAccountUserName": { "Type": "String", "Required": true } },
+      { "DependentUsername": { "Type": "String", "Required": true } },
       { "DependentAltUsername": { "Type": "String", "Required": false } },
       { "DependentAccountType": { "Type": "String", "Required": false } },
       { "DependentUserNamespace": { "Type": "String", "Required": false } },
-      { "DependentNewPassword": { "Type": "Secret", "Required": true } }
+      { "DependentPassword": { "Type": "Secret", "Required": true } }
     ],
     "Do": [
       { "BaseAddress": { "Address": "https://%Address%" } },
       { "NewHttpRequest": { "ObjectName": "UpdateReq" } },
       {
         "Headers": {
-          "ObjectName": "UpdateReq",
-          "Headers": [
-            { "Name": "X-Admin-User", "Value": "%FuncUserName%" },
-            { "Name": "X-Admin-Secret", "Value": "%FuncPassword%" }
-          ]
+          "RequestObjectName": "UpdateReq",
+          "AddHeaders": {
+            "X-Admin-User": "%FuncUserName%",
+            "X-Admin-Secret": "%FuncPassword%"
+          }
+        }
+      },
+      {
+        "SetItem": {
+          "Name": "UpdateBody",
+          "Value": {
+            "username": "%DependentUsername%",
+            "altUsername": "%DependentAltUsername%",
+            "accountType": "%DependentAccountType%",
+            "namespace": "%DependentUserNamespace%",
+            "newPassword": "%DependentPassword%"
+          },
+          "IsSecret": true
         }
       },
       {
         "Request": {
           "Verb": "Put",
-          "Url": "/api/dependent-accounts/%DependentAccountUserName%",
+          "Url": "/api/dependent-accounts/%DependentUsername%",
+          "SubstitutionInUrl": true,
           "RequestObjectName": "UpdateReq",
           "ResponseObjectName": "UpdateResp",
           "Content": {
-            "ContentType": "application/json",
-            "Body": "{\"username\":\"%DependentAccountUserName%\",\"altUsername\":\"%DependentAltUsername%\",\"accountType\":\"%DependentAccountType%\",\"namespace\":\"%DependentUserNamespace%\",\"newPassword\":\"%DependentNewPassword%\"}"
+            "ContentObjectName": "UpdateBody",
+            "ContentType": "application/json"
           }
         }
       },

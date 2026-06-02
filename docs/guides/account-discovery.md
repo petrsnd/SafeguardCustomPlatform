@@ -42,9 +42,9 @@ That same pattern applies to related discovery operations:
 
 - `DiscoverAccounts` -> `AccountDiscoveryFl`
 - `DiscoverServices` -> `ServiceDiscoveryFl`
-- `DiscoverAuthorizedKeys` -> `DiscoverSshKeyFl`
+- `DiscoverAuthorizedKeys` -> `SshKeyFeatureFl`
 
-For the full mapping, see [Operations Reference](../reference/operations.md) and [Feature Flags](feature-flags.md).
+For the full mapping, see [Operations Reference](../reference/operations.md) and [Feature Flags](../concepts/feature-flags.md).
 
 ## Anatomy of a `DiscoverAccounts` operation
 
@@ -101,6 +101,9 @@ This example uses SSH batch mode with `ExecuteCommand`, parses `getent passwd`, 
           "Timeout": "%Timeout%"
         }
       },
+      { "SetItem": { "Name": "PasswdStdout", "Value": "" } },
+      { "SetItem": { "Name": "PasswdStderr", "Value": "" } },
+      { "SetItem": { "Name": "PasswdRc", "Value": 0 } },
       {
         "ExecuteCommand": {
           "ConnectionObjectName": "ConnectSsh",
