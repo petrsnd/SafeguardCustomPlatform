@@ -76,7 +76,7 @@ Because discovery only reads data (no interactive prompts), it works well with `
               "Condition": {
                 "If": "acct != ''",
                 "Then": { "Do": [
-                  { "WriteDiscoveredAccount": { "AccountName": "%acct%" } }
+                  { "WriteDiscoveredAccount": { "Name": "%acct%" } }
                 ] }
               }
             }
