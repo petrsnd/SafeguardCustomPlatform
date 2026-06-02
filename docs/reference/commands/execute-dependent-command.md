@@ -4,7 +4,7 @@
 
 `ExecuteDependentCommand` runs a configured SSH command during an `UpdateDependentSystem` workflow and captures the resolved command, stdout, stderr, and exit status in variables.
 
-When one password change must be propagated to another system, SPP calls `UpdateDependentSystem` once per linked dependency. In that operation, SPP injects dependency-aware reserved parameters such as `DependentAccountUserName`, `DependentAccountPassword`, `DependentNewPassword`, `DependentCommand`, `CommandArguments`, and `StdinArguments`. Your script opens an SSH batch connection to the dependent asset and uses `ExecuteDependentCommand` to run the custom dependency command that performs the actual update.
+When one password change must be propagated to another system, SPP calls `UpdateDependentSystem` once per linked dependency. In that operation, SPP injects dependency-aware reserved parameters such as `DependentUsername`, `DependentPassword`, `DependentAccountType`, `DependentCommand`, `CommandArguments`, and `StdinArguments`. Your script opens an SSH batch connection to the dependent asset and uses `ExecuteDependentCommand` to run the custom dependency command that performs the actual update.
 
 ## Syntax
 
@@ -90,7 +90,7 @@ This pattern is useful when your script owns the helper command and derives argu
 {
   "SetItem": {
     "Name": "DependentArgs",
-    "Value": "\"%DependentAccountUserName%\" \"%DependentAltUsername%\" \"%DependentUserNamespace%\" \"%DependentAccountType%\""
+    "Value": "\"%DependentUsername%\" \"%DependentAltUsername%\" \"%DependentUserNamespace%\" \"%DependentAccountType%\""
   }
 }
 {

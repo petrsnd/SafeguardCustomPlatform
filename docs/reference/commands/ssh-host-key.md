@@ -4,7 +4,7 @@
 
 `DiscoverSshHostKey` performs the SSH handshake needed to read the remote host key before any login occurs.
 
-Use it inside the `DiscoverSshHostKey` or `RetrieveSshHostKey` operations to capture the asset's trusted host key, optionally record the server software banner, and then return the discovered value with `WriteResponseObject`.
+Use it inside the `DiscoverSshHostKey` operation to capture the asset's trusted host key, optionally record the server software banner, and then return the discovered value with `WriteResponseObject`.
 
 ## Syntax
 
@@ -86,7 +86,7 @@ From `samples/ssh/linux-ssh-batch-mode/LinuxSshBatchModeExample.json`:
 
 > The command writes the discovered value into `HostKeyVariableName`; returning it to the platform is a separate step, usually `WriteResponseObject`.
 
-> `RetrieveSshHostKey` implementations are commonly identical to `DiscoverSshHostKey` implementations. The operation name changes, but the command usage is the same.
+> **Note:** `RetrieveSshHostKey` is not supported by the Scriptable custom platform engine. Only `DiscoverSshHostKey` can be implemented.
 
 ## Cross-References
 

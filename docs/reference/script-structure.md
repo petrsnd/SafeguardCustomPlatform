@@ -171,9 +171,9 @@ The `Do` array is an ordered list of commands. Each command is a single-key obje
 
 ```json
 "Do": [
-  { "Connect": { "Address": "%Address%", "Port": "%Port%", ... } },
-  { "Send": { "Text": "show version\n" } },
-  { "Receive": { "Regex": ".*#" } },
+  { "Connect": { "NetworkAddress": "%Address%", "Port": "%Port%", "ConnectionObjectName": "MyConn", ... } },
+  { "Send": { "ConnectionObjectName": "MyConn", "Buffer": "show version\n" } },
+  { "Receive": { "ConnectionObjectName": "MyConn", "ExpectRegex": ".*#", "BufferName": "Output" } },
   { "Return": { "Value": true } }
 ]
 ```
@@ -323,7 +323,8 @@ Here is a complete script showing all structural elements together:
       "Do": [
         { "BaseAddress": { "Address": "https://%Address%" } },
         { "NewHttpRequest": { "ObjectName": "LoginReq" } },
-        { "Request": { "Verb": "Post", "Url": "/api/login", "RequestObjectName": "LoginReq", "ResponseObjectName": "LoginResp", "Content": { "ContentType": "application/json", "Body": "{\"username\":\"%UserName%\",\"password\":\"%Password%\"}" } } },
+        { "SetItem": { "Name": "LoginBody", "Value": "{\"username\":\"%UserName%\",\"password\":\"%Password%\"}", "IsSecret": true } },
+        { "Request": { "Verb": "Post", "Url": "/api/login", "RequestObjectName": "LoginReq", "ResponseObjectName": "LoginResp", "Content": { "ContentType": "application/json", "ContentObjectName": "LoginBody" } } },
         { "Condition": { "If": "LoginResp.StatusCode.ToString().Equals(\"OK\")", "Then": { "Do": [ { "Return": { "Value": true } } ] }, "Else": { "Do": [ { "Return": { "Value": false } } ] } } }
       ]
     }
