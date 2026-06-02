@@ -25,7 +25,7 @@ SPP determines which operation to call based on the task type:
 - A password check task invokes `CheckPassword`
 - A password change task invokes `ChangePassword`
 - An account discovery task invokes `DiscoverAccounts`
-- And so on for all 22 supported operations
+- And so on for the other supported operations
 
 ### 2. Parameter Population
 
@@ -52,8 +52,8 @@ The scripting engine processes the operation's `Do` array sequentially:
 ### 4. Result Determination
 
 The operation result is determined by:
-- **Success** — The `Do` block completes with result type `Ok` and the script returns a truthy boolean value.
-- **Failure** — The result type is `Error`, the script returns a falsy value, or an unhandled exception escapes the `Do` block.
+- **Success** — The `Do` block completes with result type `Ok`. For check operations (e.g., `CheckPassword`), the boolean return value indicates the check outcome (match vs. mismatch) but the operation itself succeeds either way when the result type is `Ok`.
+- **Failure** — The result type is not `Ok`, the return data cannot be parsed as a boolean, or an unhandled exception escapes the `Do` block.
 
 For discovery operations, success is determined by the result type and return value, not by whether `WriteDiscoveredAccount` (or `WriteDiscoveredService`) was called.
 

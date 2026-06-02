@@ -45,7 +45,7 @@ This means your script is the capability definition. If the required operation o
 
 ## Complete Flag Mapping
 
-This is the definitive mapping between script content and feature flags.
+This table documents the primary flags relevant to custom platform authors. Additional flags (such as `ClientIdFl`, `SslVerificationFl`, `WorkstationIdFl`, and `HttpProxyFl`) are derived automatically from specific reserved parameters.
 
 | Flag | Derived From |
 | --- | --- |
@@ -186,7 +186,7 @@ Use this checklist when a UI field or workflow is missing.
 > When a feature flag does not appear after upload, the problem is usually the operation name or parameter name.
 
 - **Verify the operation name is supported and spelled exactly right.** Use the [Operations Reference](../reference/operations.md).
-- **Verify the parameter name is the exact reserved name SPP expects.** Use the [Reserved Parameters](../reference/reserved-parameters.md). For example, `AccountPassword` works, but a custom name such as `UserPassword` will not set `PasswordFl`.
+- **Verify the parameter name is the exact reserved name SPP expects.** Use the [Reserved Parameters](../reference/reserved-parameters.md). For example, `AccountPassword` works, but a custom name such as `UserPassword` will not set `AccountPasswordFl`.
 - **Check both the operation and the parameter requirement.** Some flags need only an operation, while others require a specific reserved parameter too.
 - **Re-upload the script after changes.** Feature flags are recomputed during validation of the uploaded script content.
 - **Check the `Do` block only after the feature prerequisites are correct.** The feature flag comes from the operation and parameter declaration, not from the detailed command logic inside `Do`.

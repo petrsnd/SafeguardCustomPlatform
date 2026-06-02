@@ -63,7 +63,7 @@ After upload, test against a real (non-production) target:
 
 ```powershell
 # Test connectivity
-Test-SafeguardAssetConnection -AssetToUse "TestHost" -ExtendedLogging
+Test-SafeguardAsset -AssetToTest "TestHost" -ExtendedLogging
 
 # Test password check
 Test-SafeguardAssetAccountPassword -AssetToUse "TestHost" -AccountToUse "testuser" -ExtendedLogging
