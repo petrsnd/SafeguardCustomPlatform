@@ -44,7 +44,7 @@ Replace the `CheckSystem` operation with one that fetches the login page, extrac
       "Condition": {
         "If": "LoginForm == null",
         "Then": { "Do": [
-          { "Throw": { "Message": "Login form not found on page" } }
+          { "Throw": { "Value": "Login form not found on page" } }
         ] }
       }
     },
@@ -76,7 +76,7 @@ Replace the `CheckSystem` operation with one that fetches the login page, extrac
         "Then": { "Do": [{ "Return": { "Value": true } }] }
       }
     },
-    { "Throw": { "Message": "Login failed: HTTP %{LoginPostResp.StatusCode}%" } }
+    { "Throw": { "Value": "Login failed: HTTP %{LoginPostResp.StatusCode}%" } }
   ]
 }
 ```

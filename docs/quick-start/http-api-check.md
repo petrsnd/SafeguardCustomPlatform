@@ -33,7 +33,7 @@ Open the file and update the `CheckSystem` operation to hit your API's health or
     {
       "Condition": {
         "If": "HealthResp.StatusCode != 200",
-        "Then": { "Do": [{ "Throw": { "Message": "System check failed: HTTP %{HealthResp.StatusCode}%" } }] }
+        "Then": { "Do": [{ "Throw": { "Value": "System check failed: HTTP %{HealthResp.StatusCode}%" } }] }
       }
     }
   ]

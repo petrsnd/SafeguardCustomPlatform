@@ -9,8 +9,8 @@ Detailed reference documentation for every aspect of custom platform scripts. Us
 | Document | Description |
 | --- | --- |
 | [Script Structure](script-structure.md) | JSON layout, top-level keys, operations, `Do` blocks, and functions. |
-| [Operations](operations.md) | All 19 operations with credential contexts and feature flags. |
-| [Reserved Parameters](reserved-parameters.md) | Parameters SPP auto-populates (72 parameters documented). |
+| [Operations](operations.md) | All 22 operations with credential contexts and feature flags. |
+| [Reserved Parameters](reserved-parameters.md) | Parameters SPP auto-populates (74 parameters documented). |
 | [Custom Parameters](custom-parameters.md) | Defining your own parameters with types, defaults, and UI behavior. |
 | [Variables](variables.md) | Variable interpolation, scope rules, and the expression engine. |
 | [Status Messages](status-messages.md) | Predefined status messages available to scripts. |

@@ -62,7 +62,7 @@ Because discovery only reads data (no interactive prompts), it works well with `
       "Condition": {
         "If": "(Result.rc != 0)",
         "Then": { "Do": [
-          { "Throw": { "Message": "Failed to query accounts: %{ Result.Stderr }%" } }
+          { "Throw": { "Value": "Failed to query accounts: %{ Result.Stderr }%" } }
         ] }
       }
     },
