@@ -24,7 +24,7 @@ Connect-Safeguard -Appliance "spp.lab.local" -IdentityProvider local -Username "
 Custom platform development is an iterative loop:
 
 1. Write or edit your JSON script.
-2. Validate it locally with `Test-SafeguardCustomPlatformScript`.
+2. Validate it with `Test-SafeguardCustomPlatformScript` (requires an active SPP connection).
 3. Create or update the custom platform in SPP.
 4. Create a test asset that uses the custom platform.
 5. Add a test account.

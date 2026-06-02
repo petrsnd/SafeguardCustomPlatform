@@ -96,7 +96,7 @@ For APIs that accept a username and password on every request, use [`HttpAuth`](
       "RequestObjectName": "SystemRequest",
       "Type": "Basic",
       "Credentials": {
-        "Login": "%FuncUsername%",
+        "Login": "%FuncUserName%",
         "Password": "%FuncPassword%"
       }
     }
@@ -137,7 +137,7 @@ A common pattern is:
       "Name": "TokenRequestBody",
       "Value": {
         "grant_type": "client_credentials",
-        "client_id": "%FuncUsername%",
+        "client_id": "%FuncUserName%",
         "client_secret": "%FuncPassword%"
       }
     }

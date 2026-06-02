@@ -111,7 +111,7 @@ A minimal `CheckSshKey` implementation normally reads or greps the target file a
 {
   "ExecuteCommand": {
     "ConnectionObjectName": "ConnectSsh",
-    "Command": "%DelegationPrefix::$% grep -F -- '%OldPublicSshKey%' '%AuthorizedKeysPath%'",
+    "Command": "%DelegationPrefix::$% grep -F -- '%OldSshKey%' '%AuthorizedKeysPath%'",
     "BufferName": "Stdout",
     "StderrBufferName": "Stderr",
     "ExitStatusBufferName": "rc"
@@ -134,7 +134,7 @@ A robust `ChangeSshKey` flow looks like this:
 3. back up the current file
 4. append the new key line
 5. restore file ownership and mode
-6. optionally test login with `PrivateSshKey` or the newly generated private key
+6. optionally test login with the newly generated private key
 7. remove the old key line
 8. roll back from backup if anything fails
 
@@ -144,7 +144,7 @@ A simplified append step looks like this:
 {
   "ExecuteCommand": {
     "ConnectionObjectName": "ConnectSsh",
-    "Command": "echo '%NewPublicSshKey% %NewSshKeyComment::$%' | %DelegationPrefix::$% tee -a '%AuthorizedKeysPath%'",
+    "Command": "echo '%NewSshKey% %NewSshKeyComment::$%' | %DelegationPrefix::$% tee -a '%AuthorizedKeysPath%'",
     "BufferName": "Stdout",
     "StderrBufferName": "Stderr",
     "ExitStatusBufferName": "rc"
@@ -162,7 +162,7 @@ A common pattern is to write every line except the target key into a replacement
 {
   "ExecuteCommand": {
     "ConnectionObjectName": "ConnectSsh",
-    "Command": "%DelegationPrefix::$% cat '%AuthorizedKeysPath%' | grep -F -v -- '%OldPublicSshKey%' | %DelegationPrefix::$% tee '%AuthorizedKeysPath%_Updated'",
+    "Command": "%DelegationPrefix::$% cat '%AuthorizedKeysPath%' | grep -F -v -- '%OldSshKey%' | %DelegationPrefix::$% tee '%AuthorizedKeysPath%_Updated'",
     "BufferName": "Stdout",
     "StderrBufferName": "Stderr",
     "ExitStatusBufferName": "rc"
@@ -302,8 +302,8 @@ A good parser anchors on the key type but allows an optional prefix before it:
 Recommendations for restricted keys:
 
 - preserve the entire options prefix when discovering keys
-- when rotating a restricted key, rebuild the full line as `Options + space + NewPublicSshKey + optional comment`
-- do not blindly append `%NewPublicSshKey% %NewSshKeyComment%` if the old key had restrictions you must keep
+- when rotating a restricted key, rebuild the full line as `Options + space + NewSshKey + optional comment`
+- do not blindly append `%NewSshKey% %NewSshKeyComment%` if the old key had restrictions you must keep
 - if restrictions are business-critical, store them separately in a custom parameter or derive them from discovery before rewrite
 
 This matters because SPP does not automatically preserve authorized-key options on imported keys. Your script must own that behavior.
@@ -350,9 +350,11 @@ For `ChangeSshKey` and `RemoveAuthorizedKey`, treat the `authorized_keys` file a
 
 ```json
 {
-  "Command": "ExecuteCommand",
-  "CommandLine": "cp ~/.ssh/authorized_keys ~/.ssh/authorized_keys.bak",
-  "ExitStatusBufferName": "rc"
+  "ExecuteCommand": {
+    "ConnectionObjectName": "ConnectSsh",
+    "Command": "cp ~/.ssh/authorized_keys ~/.ssh/authorized_keys.bak",
+    "ExitStatusBufferName": "rc"
+  }
 }
 ```
 
@@ -360,19 +362,23 @@ After the key change commands, verify and conditionally restore:
 
 ```json
 {
-  "Command": "Condition",
-  "Expression": "%rc% != 0",
-  "Do": [
-    {
-      "Command": "ExecuteCommand",
-      "CommandLine": "cp ~/.ssh/authorized_keys.bak ~/.ssh/authorized_keys",
-      "ExitStatusBufferName": "restoreRc"
-    },
-    {
-      "Command": "Throw",
-      "Expression": "Key deployment failed — rolled back to previous authorized_keys"
+  "Condition": {
+    "If": "%rc% != 0",
+    "Then": {
+      "Do": [
+        {
+          "ExecuteCommand": {
+            "ConnectionObjectName": "ConnectSsh",
+            "Command": "cp ~/.ssh/authorized_keys.bak ~/.ssh/authorized_keys",
+            "ExitStatusBufferName": "restoreRc"
+          }
+        },
+        {
+          "Throw": { "Value": "Key deployment failed — rolled back to previous authorized_keys" }
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 

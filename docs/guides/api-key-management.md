@@ -386,23 +386,28 @@ Design your script so these cases produce a clear error message and never report
 
   ```json
   {
-    "Command": "Condition",
-    "Expression": "%verifyStatus% != 200",
-    "Do": [
-      {
-        "Command": "Log",
-        "Value": "New key verification failed (HTTP %verifyStatus%). Revoking new key and keeping old key active."
-      },
-      {
-        "Command": "Request",
-        "Url": "%BaseUrl%/api-keys/%newKeyId%",
-        "Method": "DELETE"
-      },
-      {
-        "Command": "Return",
-        "Value": "false"
+    "Condition": {
+      "If": "%verifyStatus% != 200",
+      "Then": {
+        "Do": [
+          {
+            "Log": { "Text": "New key verification failed (HTTP %verifyStatus%). Revoking new key and keeping old key active." }
+          },
+          {
+            "Request": {
+              "RequestObjectName": "AdminRequest",
+              "Verb": "DELETE",
+              "Url": "%BaseUrl%/api-keys/%newKeyId%",
+              "SubstitutionInUrl": true,
+              "ResponseObjectName": "RevokeResp"
+            }
+          },
+          {
+            "Return": { "Value": false }
+          }
+        ]
       }
-    ]
+    }
   }
   ```
 - **Handle target-specific limits.** Respect throttling, propagation delay, and eventual consistency behavior.
