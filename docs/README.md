@@ -61,11 +61,11 @@ Choose based on what you need right now:
 
 ### Reference
 - [Script Structure](reference/script-structure.md)
-- [Operations](reference/operations.md) (22 operations)
+- [Operations](reference/operations.md) (24 operations)
 - [Reserved Parameters](reference/reserved-parameters.md) (74 parameters)
 - [Custom Parameters](reference/custom-parameters.md)
 - [Variables](reference/variables.md)
-- [Commands](reference/commands/) (56 commands)
+- [Commands](reference/commands/) (49 commands)
 - [Imports](reference/imports.md)
 - [Status Messages](reference/status-messages.md)
 - [Compatibility Matrix](reference/compatibility.md)
@@ -76,6 +76,6 @@ Choose based on what you need right now:
 | --- | --- |
 | [Samples](../samples/) | Production-tested scripts with companion documentation |
 | [Templates](../templates/) | Pattern templates and minimal starters |
-| [TestTool.ps1](../tools/TestTool.ps1) | Local script validation tool |
+| [TestTool.ps1](../tools/TestTool.ps1) | Script upload and test-task trigger tool |
 | [JSON Schema](../schema/custom-platform-script.schema.json) | IDE autocomplete schema |
 | [One Identity Support](https://support.oneidentity.com/) | Official product support |

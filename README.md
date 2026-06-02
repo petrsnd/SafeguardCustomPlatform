@@ -31,7 +31,7 @@ samples/           Production-tested scripts with companion documentation
   telnet/          Cisco IOS, IBM RACF TN3270 samples
 templates/         Pattern templates and minimal starters (not tested against live targets)
 schema/            JSON Schema for IDE autocomplete
-tools/             TestTool.ps1 for local validation
+tools/             TestTool.ps1 for upload and test-task triggering
 ```
 
 ## Quick Start
@@ -55,7 +55,7 @@ For detailed quick-start paths, see [docs/quick-start/](docs/quick-start/).
 
 ## Tools
 
-- [`tools/TestTool.ps1`](tools/TestTool.ps1) — Validate script JSON locally before uploading to SPP
+- [`tools/TestTool.ps1`](tools/TestTool.ps1) — Upload script to SPP and trigger test task actions (Restore, Elevate, Demote, Suspend)
 - [`schema/custom-platform-script.schema.json`](schema/custom-platform-script.schema.json) — JSON Schema for IDE autocomplete (VS Code configured automatically)
 
 ## Contributing

@@ -149,7 +149,7 @@ The parser also accepts objects with an explicit `Name` property as an alternati
 
 | Property | Required | Description |
 | --- | --- | --- |
-| `Type` | Yes | Data type: `String`, `Integer`, `Float`, `Boolean`, `Secret`, `Array`, `Object`, `Email`, or `Null` |
+| `Type` | Yes | Data type: `String`, `Integer`, `Float`, `Boolean`, `Secret`, `Array`, `Object`, `Email`, or `Null`. Lowercase equivalents (`string`, `integer`, etc.) are also accepted. |
 | `Required` | No | Whether SPP must supply a value. Defaults to `true`. |
 | `DefaultValue` | No | Value used when SPP does not supply one. |
 | `Description` | No | Human-readable description (shown in SPP UI for custom parameters). |
