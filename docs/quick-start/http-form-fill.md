@@ -27,6 +27,11 @@ Replace the `CheckSystem` operation with one that fetches the login page, extrac
 
 ```json
 "CheckSystem": {
+  "Parameters": [
+    { "Address": { "Type": "String", "Required": true } },
+    { "FuncUserName": { "Type": "String", "Required": true } },
+    { "FuncPassword": { "Type": "Secret", "Required": true } }
+  ],
   "Do": [
     { "BaseAddress": { "Address": "https://%Address%" } },
     { "NewHttpRequest": { "ObjectName": "LoginPageReq" } },
