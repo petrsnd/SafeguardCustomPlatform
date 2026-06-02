@@ -1,6 +1,6 @@
 # Safeguard Custom Platform Scripts
 
-Build custom platform scripts for [Safeguard for Privileged Passwords (SPP)](https://www.oneidentity.com/products/safeguard-for-privileged-passwords/) when built-in platforms don't cover your target system.
+Build custom platform scripts for [Safeguard for Privileged Passwords (SPP)](https://www.oneidentity.com/products/one-identity-safeguard-for-privileged-passwords/) when built-in platforms don't cover your target system.
 
 Custom platform scripts are JSON definitions that teach SPP how to connect to any target — Linux hosts, network appliances, REST APIs, web portals, cloud services — and manage credentials (passwords, SSH keys, API keys) through SSH, HTTP, or Telnet.
 
