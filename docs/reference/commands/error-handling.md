@@ -27,7 +27,7 @@ Wrap risky work in `Try`. If the `Do` block throws an error, the optional `Catch
           "RequestTerminal": "%RequestTerminal%",
           "UserKey": "%LoginKey::$%",
           "CheckHostKey": "%CheckHostKey%",
-          "Hostkey": "%HostKey::$%",
+          "HostKey": "%HostKey::$%",
           "Timeout": "%Timeout%"
         }
       }
@@ -68,7 +68,7 @@ From `samples/ssh/generic-linux/GenericLinux.json`:
           "RequestTerminal": "%RequestTerminal%",
           "UserKey": "%LoginKey::$%",
           "CheckHostKey": "%CheckHostKey%",
-          "Hostkey": "%HostKey::$%",
+          "HostKey": "%HostKey::$%",
           "Timeout": "%Timeout%"
         }
       }

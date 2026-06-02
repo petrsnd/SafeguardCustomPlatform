@@ -144,22 +144,6 @@
     "CreateAdminUser": {
       "$ref": "#/definitions/operationDefinition",
       "description": "Creates an administrative user on the target."
-    },
-    "CheckSystem_Elevate": {
-      "$ref": "#/definitions/operationDefinition",
-      "description": "JIT-style elevate operation using the CheckSystem_ naming convention."
-    },
-    "CheckSystem_Demote": {
-      "$ref": "#/definitions/operationDefinition",
-      "description": "JIT-style demote operation using the CheckSystem_ naming convention."
-    },
-    "CheckSystem_EnableAccount": {
-      "$ref": "#/definitions/operationDefinition",
-      "description": "JIT-style enable-account operation using the CheckSystem_ naming convention."
-    },
-    "CheckSystem_DisableAccount": {
-      "$ref": "#/definitions/operationDefinition",
-      "description": "JIT-style disable-account operation using the CheckSystem_ naming convention."
     }
   },
   "required": [
@@ -234,7 +218,7 @@
     },
     "functionDefinition": {
       "type": "object",
-      "description": "A named reusable function definition. Must have a Name and either a Do or Commands block.",
+      "description": "A named reusable function definition. Must have a Name and a Do block.",
       "properties": {
         "Name": {
           "type": "string",
@@ -246,26 +230,11 @@
         "Do": {
           "$ref": "#/definitions/commandArray",
           "description": "Ordered list of commands to execute."
-        },
-        "Commands": {
-          "$ref": "#/definitions/commandArray",
-          "description": "Ordered list of commands in CommandType-style format."
         }
       },
       "required": [
-        "Name"
-      ],
-      "anyOf": [
-        {
-          "required": [
-            "Do"
-          ]
-        },
-        {
-          "required": [
-            "Commands"
-          ]
-        }
+        "Name",
+        "Do"
       ],
       "additionalProperties": true
     },

@@ -92,7 +92,7 @@ Adds one or more headers to a named request object.
 | Name | Type | Required? | Description |
 | --- | --- | :---: | --- |
 | `RequestObjectName` | String | Yes | Existing request object to modify. |
-| `AddHeaders` | Object | No | Header name/value map to add to the request object. Values support variable substitution and expressions. |
+| `AddHeaders` | Object | Yes | Header name/value map to add to the request object. Values support variable substitution and expressions. |
 
 ## Examples
 

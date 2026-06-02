@@ -13,9 +13,11 @@ Every script is a JSON object with the following possible top-level keys:
 | `Id` | Yes | Unique identifier for the platform. SPP uses this internally. |
 | `BackEnd` | Yes | Always `"Scriptable"`. |
 | `Meta` | No | Free-form object for documentation (author, version, notes). SPP ignores it. |
-| `Imports` | No | Array of built-in function library names to include. |
+| `Imports` | No | Array of built-in function library names to include. `Import` is also accepted as an alias, and a single string value is accepted in addition to an array. |
 | `Functions` | No | Array of reusable function definitions callable from operations. |
 | *Operations* | At least one | One or more named operations (see [Operations](#operations) below). |
+
+> **Note:** Any unrecognized top-level property that is not one of the keys above is treated as a named function block by the parser.
 
 ### Minimal Example
 
@@ -131,10 +133,16 @@ For the complete list of reserved parameter names and their auto-population rule
 
 ## Parameters
 
-Each parameter definition is a single-key object in the `Parameters` array:
+The most common parameter definition style is a single-key object in the `Parameters` array:
 
 ```json
 { "AccountUserName": { "Type": "String", "Required": true } }
+```
+
+The parser also accepts objects with an explicit `Name` property as an alternative syntax:
+
+```json
+{ "Name": "AccountUserName", "Type": "String", "Required": true }
 ```
 
 ### Parameter Properties

@@ -4,7 +4,7 @@
 
 Operations are the named entry points in a custom platform script that SPP invokes when performing specific tasks. Each operation you include in your script tells SPP what your platform can do — SPP automatically derives [feature flags](../concepts/feature-flags.md) from the operations present.
 
-This page documents all 22 operations available for custom platform scripts.
+This page documents all 24 operations available for custom platform scripts.
 
 ## Quick Reference
 
@@ -29,6 +29,10 @@ This page documents all 22 operations available for custom platform scripts.
 | [Dependencies](#updatedependentsystem) | `UpdateDependentSystem` | Service account + dependent account | `DependentSystemFl` |
 | [API Keys](#checkapikey) | `CheckApiKey` | Service account + managed account | `ApiKeyFl` |
 | [API Keys](#changeapikey) | `ChangeApiKey` | Service account + managed account | `ApiKeyFl` |
+| [API Keys](#discoverapikeys) | `DiscoverApiKeys` | Service account | `ApiKeyFl` |
+| [Discovery](#discoverassets) | `DiscoverAssets` | Service account | — |
+| [Discovery](#createadminuser) | `CreateAdminUser` | Service account | — |
+| [Connection](#checkhostkey) | `CheckHostKey` | None (asset-level) | — |
 | [Files](#checkfile) | `CheckFile` | Service account + managed account | — |
 | [Files](#changefile) | `ChangeFile` | Service account + managed account | — |
 
@@ -106,7 +110,7 @@ Tests connectivity to the target system using the asset's service account. This 
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%", "Timeout": "%Timeout%" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%", "Timeout": "%Timeout%" } },
     { "Disconnect": {} },
     { "Return": { "Value": true } }
   ]
@@ -204,11 +208,11 @@ Verifies that the stored password for a managed account is still valid on the ta
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%", "Timeout": "%Timeout%" } },
-    { "Send": { "Text": "su - %AccountUserName%\n" } },
-    { "Receive": { "Regex": "[Pp]assword:" } },
-    { "Send": { "Text": "%AccountPassword%\n" } },
-    { "Receive": { "Regex": "\\$|#", "ResultVariable": "SuResult" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%", "Timeout": "%Timeout%" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "su - %AccountUserName%\n" } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "[Pp]assword:" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "%AccountPassword%\n", "ContainsSecret": true } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "\\$|#", "BufferName": "SuResult" } },
     { "Disconnect": {} },
     { "Return": { "Value": true } }
   ]
@@ -283,13 +287,13 @@ Changes the password for a managed account on the target system.
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%", "Timeout": "%Timeout%" } },
-    { "Send": { "Text": "sudo passwd %AccountUserName%\n" } },
-    { "Receive": { "Regex": "[Nn]ew.*[Pp]assword:" } },
-    { "Send": { "Text": "%NewPassword%\n" } },
-    { "Receive": { "Regex": "[Rr]etype|[Rr]e-enter|[Cc]onfirm" } },
-    { "Send": { "Text": "%NewPassword%\n" } },
-    { "Receive": { "Regex": "success|updated" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%", "Timeout": "%Timeout%" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "sudo passwd %AccountUserName%\n" } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "[Nn]ew.*[Pp]assword:" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "%NewPassword%\n", "ContainsSecret": true } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "[Rr]etype|[Rr]e-enter|[Cc]onfirm" } },
+    { "Send": { "ConnectionObjectName": "ConnectSsh", "Buffer": "%NewPassword%\n", "ContainsSecret": true } },
+    { "Receive": { "ConnectionObjectName": "ConnectSsh", "ExpectRegex": "success|updated" } },
     { "Disconnect": {} },
     { "Return": { "Value": true } }
   ]
@@ -340,8 +344,8 @@ Verifies that the stored SSH public key for a managed account is present in the 
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%", "Timeout": "%Timeout%" } },
-    { "ExecuteCommand": { "Command": "grep -F '%OldSshKey%' /home/%AccountUserName%/.ssh/authorized_keys", "ResultVariable": "GrepResult" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%", "Timeout": "%Timeout%" } },
+    { "ExecuteCommand": { "ConnectionObjectName": "ConnectSsh", "Command": "grep -F '%OldSshKey%' /home/%AccountUserName%/.ssh/authorized_keys", "BufferName": "GrepResult" } },
     { "Condition": { "If": "GrepResult.Contains(OldSshKey)", "Then": { "Do": [{ "Return": { "Value": true } }] }, "Else": { "Do": [{ "Return": { "Value": false } }] } } }
   ]
 }
@@ -468,7 +472,7 @@ Removes a specific SSH public key from a managed account's authorized keys store
 
 ### DiscoverAccounts
 
-Discovers accounts on the target system that SPP can manage. Returns a list of account names found on the system.
+Discovers accounts on the target system that SPP can manage. Reports discovered accounts using `WriteDiscoveredAccount` commands.
 
 **Triggered by:** Account Discovery job (scheduled or manual).
 
@@ -489,7 +493,7 @@ Discovers accounts on the target system that SPP can manage. Returns a list of a
 
 **Feature flags derived:** `AccountDiscoveryFl`
 
-**Return value:** Reports discovered accounts back to SPP. For SSH platforms, typically parses `/etc/passwd` or uses `getent passwd`. For HTTP platforms, calls an API that lists users.
+**Return value:** Boolean operation result. Discovered accounts are reported to SPP through individual `WriteDiscoveredAccount` commands rather than being returned directly. For SSH platforms, typically parses `/etc/passwd` or uses `getent passwd`. For HTTP platforms, calls an API that lists users.
 
 **Example (SSH):**
 
@@ -504,10 +508,13 @@ Discovers accounts on the target system that SPP can manage. Returns a list of a
     { "HostKey": { "Type": "String", "Required": false } }
   ],
   "Do": [
-    { "Connect": { "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "Hostkey": "%HostKey%" } },
-    { "ExecuteCommand": { "Command": "getent passwd | cut -d: -f1", "ResultVariable": "AccountList" } },
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%" } },
+    { "ExecuteCommand": { "ConnectionObjectName": "ConnectSsh", "Command": "getent passwd | cut -d: -f1", "BufferName": "AccountList" } },
+    { "ForEach": { "Collection": "%AccountList.Split('\n')%", "Variable": "AcctName", "Body": { "Do": [
+      { "WriteDiscoveredAccount": { "Name": "%AcctName%" } }
+    ] } } },
     { "Disconnect": {} },
-    { "Return": { "Value": "%AccountList%" } }
+    { "Return": { "Value": true } }
   ]
 }
 ```

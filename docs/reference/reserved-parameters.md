@@ -99,7 +99,7 @@ Use these when the target system needs more than just the account name.
 | `AccountNamespace` | String | `Account.Namespace` | Account namespace when the account is created |
 | `AccountDn` | String | `Account.DistinguishedName` | Directory-backed account identity |
 | `DomainName` | String | `Asset.DomainName` or account domain context | Domain field on the asset/account |
-| `NetBiosname` | String | Account NetBIOS domain context | Domain-backed account information |
+| `NetBiosName` | String | Account NetBIOS domain context | Domain-backed account information |
 | `ObjectSid` | String | Account SID context | Directory/domain account identity |
 | `Environment` | String | **NOT mapped** | Admin types it in Custom Script Parameters per asset |
 
