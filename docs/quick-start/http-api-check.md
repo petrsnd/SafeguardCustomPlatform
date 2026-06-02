@@ -35,12 +35,13 @@ Open the file and update the `CheckSystem` operation to hit your API's health or
         "If": "HealthResp.StatusCode != 200",
         "Then": { "Do": [{ "Throw": { "Value": "System check failed: HTTP %{HealthResp.StatusCode}%" } }] }
       }
-    }
+    },
+    { "Return": { "Value": true } }
   ]
 }
 ```
 
-Replace `/api/v1/health` with your target's actual endpoint.
+Replace `/api/v1/health` with your target's actual endpoint. If the request succeeds (HTTP 200), the script returns `true`. Without an explicit `Return`, SPP treats the result as a failed check even when the API responds successfully.
 
 ### 3. Upload to SPP
 
