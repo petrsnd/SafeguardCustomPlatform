@@ -514,6 +514,8 @@ In this example:
 - `testuser` is the managed account you will verify with `CheckPassword` and rotate with `ChangePassword`.
 - `Set-SafeguardAssetAccountPassword` securely prompts you for the managed account password.
 
+> **Note:** `New-SafeguardCustomPlatformAsset` will interactively prompt for `DisplayName` and for any custom script parameters (e.g., `RequestTerminal`) not supplied via `-CustomScriptParameters`. Additionally, `-AcceptSshHostKey` requires the platform script to include a `UserKey` parameter so SPP can attempt SSH key-based host key discovery. If your script does not include `UserKey`, omit `-AcceptSshHostKey` and either accept the host key through the web UI or use `-NoSshHostKeyDiscovery` with `CheckHostKey` defaulting to `false`.
+
 Because `ChangePassword` uses `sudo passwd`, make sure the service account is allowed to change the target account's password. For a first lab, using `root` as the service account is the simplest setup.
 
 ## Step 9: Test It
