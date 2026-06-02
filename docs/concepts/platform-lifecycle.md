@@ -49,9 +49,9 @@ SPP validates the script immediately. If validation fails, you get an error mess
 Testing happens in two stages:
 
 ### Local Validation
-Use the [TestTool](../../tools/TestTool.ps1) to validate JSON structure before uploading:
+Use `Test-SafeguardCustomPlatformScript` to validate the script before uploading (requires an active SPP connection):
 ```powershell
-.\tools\TestTool.ps1 -ScriptFile .\MyPlatform.json
+Test-SafeguardCustomPlatformScript ".\MyPlatform.json"
 ```
 
 ### Live Testing

@@ -134,7 +134,7 @@ Add an account that the platform can manage on the test asset.
 
 ```powershell
 New-SafeguardAssetAccount "Test Target" "testuser" -Description "Test account for development"
-Set-SafeguardAssetAccountPassword -AssetToUse "Test Target" -AccountToUse "testuser"
+Set-SafeguardAssetAccountPassword -AssetToSet "Test Target" -AccountToSet "testuser"
 ```
 
 `Set-SafeguardAssetAccountPassword` prompts for the password securely.
