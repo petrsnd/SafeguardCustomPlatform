@@ -10,16 +10,16 @@ This page documents all 24 operations available for custom platform scripts.
 
 | Category | Operation | Credential Context | Feature Flag Set |
 | --- | --- | --- | --- |
-| [Connection](#checksystem) | `CheckSystem` | Service account | — |
-| [Password](#checkpassword) | `CheckPassword` | Managed account (+ service account for SSH) | `PasswordFl` |
-| [Password](#changepassword) | `ChangePassword` | Managed account (+ service account for SSH) | `AccountPasswordFl` |
-| [SSH Keys](#checksshkey) | `CheckSshKey` | Managed account (+ service account) | `SshKeyFl` |
-| [SSH Keys](#changesshkey) | `ChangeSshKey` | Managed account (+ service account) | `SshKeyFl` |
+| [Connection](#checksystem) | `CheckSystem` | Service account | `PasswordFeatureFl` |
+| [Password](#checkpassword) | `CheckPassword` | Managed account (+ service account for SSH) | `PasswordFeatureFl` |
+| [Password](#changepassword) | `ChangePassword` | Managed account (+ service account for SSH) | `PasswordFeatureFl` |
+| [SSH Keys](#checksshkey) | `CheckSshKey` | Managed account (+ service account) | `SshKeyFeatureFl` |
+| [SSH Keys](#changesshkey) | `ChangeSshKey` | Managed account (+ service account) | `SshKeyFeatureFl` |
 | [SSH Keys](#discoversshhostkey) | `DiscoverSshHostKey` | None (asset-level) | `SshTransportFl` |
-| [SSH Keys](#retrievesshhostkey) | `RetrieveSshHostKey` | None (asset-level) | `SshHostKeyFl` |
+| [SSH Keys](#retrievesshhostkey) | `RetrieveSshHostKey` | None (asset-level) | — |
 
-| [SSH Keys](#discoverauthorizedkeys) | `DiscoverAuthorizedKeys` | Managed account (+ service account) | `DiscoverSshKeyFl` |
-| [SSH Keys](#removeauthorizedkey) | `RemoveAuthorizedKey` | Managed account (+ service account) | `DiscoverSshKeyFl` |
+| [SSH Keys](#discoverauthorizedkeys) | `DiscoverAuthorizedKeys` | Managed account (+ service account) | `SshKeyFeatureFl` |
+| [SSH Keys](#removeauthorizedkey) | `RemoveAuthorizedKey` | Managed account (+ service account) | — |
 | [Discovery](#discoveraccounts) | `DiscoverAccounts` | Service account | `AccountDiscoveryFl` |
 | [Discovery](#discoverservices) | `DiscoverServices` | Service account | `ServiceDiscoveryFl` |
 | [JIT Access](#enableaccount) | `EnableAccount` | Service account + managed account | `SuspendRestoreAccountFl` |
@@ -27,9 +27,9 @@ This page documents all 24 operations available for custom platform scripts.
 | [JIT Access](#elevateaccount) | `ElevateAccount` | Service account + managed account | `ElevateDemoteAccountFl` |
 | [JIT Access](#demoteaccount) | `DemoteAccount` | Service account + managed account | `ElevateDemoteAccountFl` |
 | [Dependencies](#updatedependentsystem) | `UpdateDependentSystem` | Service account + dependent account | `DependentSystemFl` |
-| [API Keys](#checkapikey) | `CheckApiKey` | Service account + managed account | `ApiKeyFl` |
-| [API Keys](#changeapikey) | `ChangeApiKey` | Service account + managed account | `ApiKeyFl` |
-| [API Keys](#discoverapikeys) | `DiscoverApiKeys` | Service account | `ApiKeyFl` |
+| [API Keys](#checkapikey) | `CheckApiKey` | Service account + managed account | `ApiKeyFeatureFl` |
+| [API Keys](#changeapikey) | `ChangeApiKey` | Service account + managed account | `ApiKeyFeatureFl` |
+| [API Keys](#discoverapikeys) | `DiscoverApiKeys` | Service account | — |
 | [Discovery](#discoverassets) | `DiscoverAssets` | Service account | — |
 | [Discovery](#createadminuser) | `CreateAdminUser` | Service account | — |
 | [Connection](#checkhostkey) | `CheckHostKey` | None (asset-level) | — |
@@ -92,7 +92,7 @@ Tests connectivity to the target system using the asset's service account. This 
 | `HostKey` | String | Expected SSH host key fingerprint |
 | `UseSsl` | Boolean | Whether to use SSL/TLS |
 
-**Feature flags derived:** `PortFl`, `TimeoutFl`, `UseSslFl`, `CheckHostKeyFl`, `SshPortFl` (based on which optional parameters are declared)
+**Feature flags derived:** `PasswordFeatureFl`; additionally `CustomPortFl`, `TimeoutFl`, `UseSslFl`, `SshTransportFl` (based on which optional parameters are declared)
 
 **Return value:** `true` if connection succeeds; throw an error on failure.
 
@@ -169,7 +169,7 @@ Verifies that the stored password for a managed account is still valid on the ta
 | `Port` | Integer | SSH port |
 | `Timeout` | Integer | Connection timeout |
 
-**Feature flags derived:** `PasswordFl` (requires `AccountPassword` parameter to be present)
+**Feature flags derived:** `PasswordFeatureFl` (from the operation); additionally `AccountPasswordFl` if `AccountPassword` parameter is present
 
 **Return value:** `true` if the password is valid; `false` or throw on failure.
 
@@ -243,7 +243,7 @@ Changes the password for a managed account on the target system.
 | `Port` | Integer | SSH port |
 | `Timeout` | Integer | Connection timeout |
 
-**Feature flags derived:** `AccountPasswordFl` (requires both `AccountPassword` and `NewPassword` parameters)
+**Feature flags derived:** `PasswordFeatureFl` (from the operation); additionally `AccountPasswordFl` if `AccountPassword` parameter is present
 
 **Return value:** `true` if the password was changed successfully; throw on failure.
 
@@ -324,7 +324,7 @@ Verifies that the stored SSH public key for a managed account is present in the 
 | `AccountUserName` | String | Account whose authorized keys to check |
 | `OldSshKey` | String | The SSH public key expected to be present |
 
-**Feature flags derived:** `SshKeyFl`
+**Feature flags derived:** `SshKeyFeatureFl`
 
 **Return value:** `true` if the key is found in the account's authorized keys; `false` otherwise.
 
@@ -374,7 +374,7 @@ Replaces an SSH key in a managed account's authorized keys store — adding the 
 | `NewSshPrivateKey` | Secret | New private key (if script needs it for verification) |
 | `NewSshKeyType` | String | Key type: RSA, ED25519, ECDSA |
 
-**Feature flags derived:** `SshKeyFl`
+**Feature flags derived:** `SshKeyFeatureFl`
 
 **Return value:** `true` if the key was rotated successfully.
 
@@ -397,7 +397,7 @@ Retrieves the SSH host key fingerprint of the target system during asset creatio
 | `Port` | Integer | SSH port (default 22) |
 | `Timeout` | Integer | Connection timeout |
 
-**Feature flags derived:** `SshHostKeyFl`
+**Feature flags derived:** `SshTransportFl`
 
 **Return value:** The operation returns a boolean `PlatformOperationResult(true/false)`. The discovered host key itself is stored in the variable named by `HostKeyVariableName` on the `DiscoverSshHostKey` command.
 
@@ -427,7 +427,7 @@ Retrieves the SSH host key fingerprint of the target system during asset creatio
 
 > ⚠️ **Not supported for custom platforms.** The Scriptable engine does not allow custom platform scripts to implement this operation. Use `DiscoverSshHostKey` instead.
 
-**Feature flags derived:** `SshHostKeyFl` (same flag as `DiscoverSshHostKey`)
+**Feature flags derived:** `SshTransportFl` (same flag as `DiscoverSshHostKey`)
 
 ### DiscoverAuthorizedKeys
 
@@ -443,7 +443,7 @@ Discovers all SSH public keys configured in a managed account's authorized keys 
 | `FuncUserName` | String | Service account for SSH login |
 | `AccountUserName` | String | Account whose authorized keys to enumerate |
 
-**Feature flags derived:** `DiscoverSshKeyFl`
+**Feature flags derived:** `SshKeyFeatureFl`
 
 **Return value:** Reports discovered keys back to SPP. The script reads the authorized_keys file and reports each key found.
 
@@ -462,7 +462,7 @@ Removes a specific SSH public key from a managed account's authorized keys store
 | `AccountUserName` | String | Account whose key to remove |
 | `OldSshKey` | String | The specific key to remove |
 
-**Feature flags derived:** `DiscoverSshKeyFl` (same flag as `DiscoverAuthorizedKeys`)
+**Feature flags derived:** `SshKeyFeatureFl` (same flag as `DiscoverAuthorizedKeys`)
 
 **Return value:** `true` if the key was removed successfully.
 
@@ -648,12 +648,12 @@ Updates a dependent system after a password change on the primary account. For e
 
 | Parameter | Type | Purpose |
 | --- | --- | --- |
-| `DependentCommand` | String | Custom command to execute (triggers `CustomDependencyFl`) |
+| `DependentCommand` | String | Custom command to execute (triggers `CustomDependencyUpdateFl`) |
 | `CommandArguments` | String | Arguments for the command |
 | `StdinArguments` | Array | Stdin arguments piped to the command |
 | `ReportExitStatus` | Boolean | Whether to report exit code in results |
 
-**Feature flags derived:** `DependentSystemFl`; additionally `CustomDependencyFl` if `DependentCommand` parameter is present.
+**Feature flags derived:** `DependentSystemFl`; additionally `CustomDependencyUpdateFl` if `DependentCommand` parameter is present.
 
 **Return value:** `true` if the dependent system was updated successfully.
 
@@ -682,7 +682,7 @@ Verifies that the stored API key for a managed account is still valid.
 | `AccountUserName` | String | The account whose API key to verify |
 | `AccountPassword` | Secret | The API key to verify |
 
-**Feature flags derived:** `ApiKeyFl`
+**Feature flags derived:** `ApiKeyFeatureFl`
 
 **Return value:** `true` if the API key is valid; `false` or throw if invalid.
 
@@ -724,7 +724,7 @@ Rotates an API key — generates a new key and invalidates the old one.
 | `AccountPassword` | Secret | The current API key |
 | `NewPassword` | Secret | The new API key (generated by SPP or returned by the API) |
 
-**Feature flags derived:** `ApiKeyFl`
+**Feature flags derived:** `ApiKeyFeatureFl`
 
 **Return value:** `true` if the key was rotated successfully.
 
@@ -792,24 +792,21 @@ SPP automatically derives these feature flags when you upload a script. You neve
 
 | Flag | How It's Derived |
 | --- | --- |
-| `PasswordFl` | `CheckPassword` operation with `AccountPassword` parameter |
-| `AccountPasswordFl` | `ChangePassword` operation with both `AccountPassword` and `NewPassword` parameters |
-| `SshKeyFl` | `CheckSshKey` operation present |
-| `SshHostKeyFl` | `DiscoverSshHostKey` operation present |
-| `DiscoverSshKeyFl` | `DiscoverAuthorizedKeys` operation present |
+| `PasswordFeatureFl` | Any of: `CheckSystem`, `CheckPassword`, `ChangePassword`, `EnableAccount`, `DisableAccount`, `ElevateAccount`, `DemoteAccount`, `DiscoverSshHostKey`, `RetrieveSshHostKey`, `UpdateDependentSystem` |
+| `AccountPasswordFl` | `AccountPassword` parameter (Secret type) present |
+| `SshKeyFeatureFl` | `CheckSshKey`, `ChangeSshKey`, or `DiscoverAuthorizedKeys` operation present |
+| `SshTransportFl` | `DiscoverSshHostKey` operation, or SSH-related parameters: `CheckHostKey`, `HostKey`, `UserKey`, `NewSshPrivateKey`, `NewSshKeyComment`, `NewSshKey`, `OldSshKey` |
 | `AccountDiscoveryFl` | `DiscoverAccounts` operation present |
 | `ServiceDiscoveryFl` | `DiscoverServices` operation present |
 | `SuspendRestoreAccountFl` | `EnableAccount` or `DisableAccount` operation present |
 | `ElevateDemoteAccountFl` | `ElevateAccount` or `DemoteAccount` operation present |
 | `DependentSystemFl` | `UpdateDependentSystem` operation present |
-| `CustomDependencyFl` | `UpdateDependentSystem` with `DependentCommand` parameter |
-| `ApiKeyFl` | `CheckApiKey` operation present |
+| `CustomDependencyUpdateFl` | `UpdateDependentSystem` with `DependentCommand` parameter |
+| `ApiKeyFeatureFl` | `CheckApiKey` or `ChangeApiKey` operation present |
 | `FileFeatureFl` | Always `true` (hardcoded for all platforms) |
-| `PortFl` | Any operation with `Port` parameter |
-| `SshPortFl` | Any operation with `SshPort` parameter |
-| `UseSslFl` | Any operation with `UseSsl` parameter |
-| `TimeoutFl` | Any operation with `Timeout` parameter |
-| `CheckHostKeyFl` | Any operation with `CheckHostKey` parameter |
+| `CustomPortFl` | Any operation with `Port` parameter (Integer type) |
+| `UseSslFl` | Any operation with `UseSsl` parameter (Boolean type) |
+| `TimeoutFl` | Any operation with `Timeout` parameter (Integer type) |
 
 For a detailed guide on how feature flags affect platform behavior in the SPP UI, see [Feature Flags Guide](../concepts/feature-flags.md).
 

@@ -42,7 +42,7 @@ That same pattern applies to related discovery operations:
 
 - `DiscoverAccounts` -> `AccountDiscoveryFl`
 - `DiscoverServices` -> `ServiceDiscoveryFl`
-- `DiscoverAuthorizedKeys` -> `DiscoverSshKeyFl`
+- `DiscoverAuthorizedKeys` -> `SshKeyFeatureFl`
 
 For the full mapping, see [Operations Reference](../reference/operations.md) and [Feature Flags](../concepts/feature-flags.md).
 

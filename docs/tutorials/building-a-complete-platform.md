@@ -238,7 +238,7 @@ Because your script contains these operations, SPP automatically derives feature
 
 | Flag | Set because |
 | --- | --- |
-| `PasswordFl` | `CheckPassword` is present |
+| `PasswordFeatureFl` | `CheckPassword` is present |
 | `AccountPasswordFl` | `ChangePassword` is present |
 | `AccountDiscoveryFl` | `DiscoverAccounts` is present |
 

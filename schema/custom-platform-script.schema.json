@@ -247,7 +247,7 @@
     },
     "operationDefinition": {
       "type": "object",
-      "description": "An operation entry point. Declare Parameters, then provide either Do or Commands with the steps to execute.",
+      "description": "An operation entry point. Declare Parameters and provide Do with the steps to execute.",
       "properties": {
         "Parameters": {
           "$ref": "#/definitions/parameterArray",
@@ -255,27 +255,12 @@
         },
         "Do": {
           "$ref": "#/definitions/commandArray",
-          "description": "Classic command list used by most existing scripts."
-        },
-        "Commands": {
-          "$ref": "#/definitions/commandArray",
-          "description": "CommandType-style command list."
+          "description": "The command list that the engine executes for this operation."
         }
       },
       "required": [
-        "Parameters"
-      ],
-      "anyOf": [
-        {
-          "required": [
-            "Do"
-          ]
-        },
-        {
-          "required": [
-            "Commands"
-          ]
-        }
+        "Parameters",
+        "Do"
       ],
       "additionalProperties": true
     },
@@ -539,91 +524,16 @@
         }
       }
     },
-    "knownFlatCommandObject": {
-      "type": "object",
-      "description": "Flat command object used by CommandType-style scripts in Commands arrays.",
-      "properties": {
-        "CommandType": {
-          "type": "string",
-          "description": "Command identifier used by the flat command shape.",
-          "enum": [
-            "AwsFunction",
-            "BaseAddress",
-            "Break",
-            "ClearCookie",
-            "Comment",
-            "CompareMacOsPasswordHash",
-            "ComparePasswordHash",
-            "CompareShadowHash",
-            "CompareUnixPasswordHash",
-            "Condition",
-            "Connect",
-            "CryptMd5",
-            "Declare",
-            "Disconnect",
-            "DiscoverSshHostKey",
-            "Eval",
-            "ExecuteCommand",
-            "ExecuteDependentCommand",
-            "ExtractFormData",
-            "ExtractJsonObject",
-            "For",
-            "ForEach",
-            "Function",
-            "GetCookie",
-            "GetFormData",
-            "GetFormValue",
-            "Headers",
-            "HttpAuth",
-            "Log",
-            "NewHttpRequest",
-            "Receive",
-            "Request",
-            "Return",
-            "Send",
-            "SetCookie",
-            "SetFormData",
-            "SetFormValue",
-            "SetItem",
-            "SmaAccountName",
-            "Split",
-            "SslRequest",
-            "Status",
-            "Switch",
-            "Throw",
-            "Try",
-            "UrlDecode",
-            "UrlEncode",
-            "VmwareSdkConnect",
-            "VmwareSdkDiscoverAssets",
-            "VmwareSdkDisconnect",
-            "Wait",
-            "WriteDiscoveredAccount",
-            "WriteDiscoveredAsset",
-            "WriteDiscoveredService",
-            "WriteDiscoveredSshKey",
-            "WriteResponseObject"
-          ]
-        }
-      },
-      "required": [
-        "CommandType"
-      ],
-      "additionalProperties": true
-    },
     "genericCommandObject": {
       "type": "object",
       "description": "Fallback for commands not explicitly listed in the schema. The engine resolves commands by name at runtime.",
       "additionalProperties": true
     },
     "command": {
-      "description": "A command inside Do or Commands. Known command names get autocomplete and hover help; the generic fallback permits any valid command shape.",
+      "description": "A command inside a Do array. Known command names get autocomplete and hover help; the generic fallback permits any valid command shape.",
       "anyOf": [
         {
           "$ref": "#/definitions/knownNestedCommandObject"
-        },
-        {
-          "$ref": "#/definitions/knownFlatCommandObject"
         },
         {
           "$ref": "#/definitions/genericCommandObject"

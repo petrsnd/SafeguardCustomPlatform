@@ -68,7 +68,7 @@ The important values in an API key workflow are:
 | `FuncUserName` / `FuncPassword` | Service or admin credentials used to authenticate to the target system's management API. |
 | `Address` | Base address of the target API. |
 
-Safeguard automatically derives the **`ApiKeyFl`** feature flag when your script defines **`CheckApiKey`**. In practice, you almost always pair `CheckApiKey` with `ChangeApiKey` so the platform can both validate and rotate API credentials.
+Safeguard automatically derives the **`ApiKeyFeatureFl`** feature flag when your script defines **`CheckApiKey`**. In practice, you almost always pair `CheckApiKey` with `ChangeApiKey` so the platform can both validate and rotate API credentials.
 
 ## HTTP-based implementation pattern
 

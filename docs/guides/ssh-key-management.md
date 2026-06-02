@@ -81,13 +81,12 @@ SPP derives the relevant feature flags from the operations present in your scrip
 
 | Flag | Derived from |
 | --- | --- |
-| `SshKeyFl` | `CheckSshKey` operation present |
-| `DiscoverSshKeyFl` | `DiscoverAuthorizedKeys` operation present |
+| `SshKeyFeatureFl` | `CheckSshKey`, `ChangeSshKey`, or `DiscoverAuthorizedKeys` operation present |
 
 Important consequences:
 
-- `ChangeSshKey` is normally paired with `CheckSshKey`, but `SshKeyFl` is derived from `CheckSshKey`.
-- `RemoveAuthorizedKey` belongs with key discovery workflows, but `DiscoverSshKeyFl` is derived from `DiscoverAuthorizedKeys`.
+- `ChangeSshKey` is normally paired with `CheckSshKey`, but all three operations (`CheckSshKey`, `ChangeSshKey`, `DiscoverAuthorizedKeys`) contribute to `SshKeyFeatureFl`.
+- `RemoveAuthorizedKey` belongs with key discovery workflows, but the flag is derived from the presence of `CheckSshKey`, `ChangeSshKey`, or `DiscoverAuthorizedKeys`.
 - You do not hand-edit these flags in the JSON; they are inferred from the script content. See [Feature Flags](../concepts/feature-flags.md).
 
 ## Recommended implementation pattern

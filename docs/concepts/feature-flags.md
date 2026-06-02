@@ -49,7 +49,7 @@ This table documents the primary flags relevant to custom platform authors. Addi
 
 | Flag | Derived From |
 | --- | --- |
-| `PasswordFeatureFl` | Any operation in: `CheckSystem`, `CheckPassword`, `ChangePassword`, `EnableAccount`, `DisableAccount`, `ElevateAccount`, `DemoteAccount`, `DiscoverSshHostKey`, `UpdateDependentSystem` |
+| `PasswordFeatureFl` | Any operation in: `CheckSystem`, `CheckPassword`, `ChangePassword`, `EnableAccount`, `DisableAccount`, `ElevateAccount`, `DemoteAccount`, `DiscoverSshHostKey`, `RetrieveSshHostKey`, `UpdateDependentSystem` |
 | `SshKeyFeatureFl` | `CheckSshKey`, `ChangeSshKey`, or `DiscoverAuthorizedKeys` operation present |
 | `ApiKeyFeatureFl` | `CheckApiKey` or `ChangeApiKey` operation present |
 | `FileFeatureFl` | Always `true` for all custom platforms |

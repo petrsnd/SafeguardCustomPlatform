@@ -87,5 +87,5 @@ The task log captures all errors and, with `ExtendedLogging` enabled, captures t
 
 - [Architecture](architecture.md) — high-level overview
 - [Feature Flags](feature-flags.md) — how capabilities are derived
-- [Operations Reference](../reference/operations.md) — all 22 supported operations
+- [Operations Reference](../reference/operations.md) — all 24 supported operations
 - [Testing and Debugging](../guides/testing-and-debugging.md) — how to diagnose execution issues
