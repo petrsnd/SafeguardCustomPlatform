@@ -503,7 +503,7 @@ New-SafeguardCustomPlatformAsset "My First SSH Platform" "10.0.0.1" `
     -ServiceAccountPassword $svcPassword `
     -AcceptSshHostKey
 New-SafeguardAssetAccount "10.0.0.1" "testuser"
-Set-SafeguardAssetAccountPassword -AssetToUse "10.0.0.1" -AccountToUse "testuser"
+Set-SafeguardAssetAccountPassword -AssetToSet "10.0.0.1" -AccountToSet "testuser"
 ```
 
 In this example:

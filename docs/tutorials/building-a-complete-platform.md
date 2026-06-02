@@ -102,7 +102,7 @@ Key points:
 Test discovery from SPP's web UI under **Asset Management > Discovery**, or trigger it with:
 
 ```powershell
-Invoke-SafeguardAssetAccountDiscovery -AssetToUse "TestHost"
+Invoke-SafeguardAssetAccountDiscovery -Asset "TestHost"
 ```
 
 ## Step 2: Extract Reusable Functions

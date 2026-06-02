@@ -539,7 +539,7 @@ New-SafeguardCustomPlatformAsset "My First HTTP Platform" "api.example.com" `
     -ServiceAccountName "admin" `
     -ServiceAccountPassword $svcPassword
 New-SafeguardAssetAccount "api.example.com" "testuser"
-Set-SafeguardAssetAccountPassword -AssetToUse "api.example.com" -AccountToUse "testuser"
+Set-SafeguardAssetAccountPassword -AssetToSet "api.example.com" -AccountToSet "testuser"
 ```
 
 In this example, `admin` is the service account used by `CheckSystem` and `ChangePassword`, and `testuser` is the managed account validated by `CheckPassword` and updated by `ChangePassword`. The `-ServiceAccountPassword` parameter supplies the credential securely (SPP will prompt interactively if omitted).
