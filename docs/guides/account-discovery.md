@@ -101,6 +101,9 @@ This example uses SSH batch mode with `ExecuteCommand`, parses `getent passwd`, 
           "Timeout": "%Timeout%"
         }
       },
+      { "SetItem": { "Name": "PasswdStdout", "Value": "" } },
+      { "SetItem": { "Name": "PasswdStderr", "Value": "" } },
+      { "SetItem": { "Name": "PasswdRc", "Value": 0 } },
       {
         "ExecuteCommand": {
           "ConnectionObjectName": "ConnectSsh",
