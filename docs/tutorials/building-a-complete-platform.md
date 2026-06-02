@@ -239,7 +239,7 @@ Because your script contains these operations, SPP automatically derives feature
 | Flag | Set because |
 | --- | --- |
 | `PasswordFeatureFl` | `CheckPassword` is present |
-| `AccountPasswordFl` | `ChangePassword` is present |
+| `AccountPasswordFl` | `AccountPassword` parameter (Secret type) is present |
 | `AccountDiscoveryFl` | `DiscoverAccounts` is present |
 
 You never configure these manually — they're derived from your script content. See [Feature Flags](../concepts/feature-flags.md) for the full list.
