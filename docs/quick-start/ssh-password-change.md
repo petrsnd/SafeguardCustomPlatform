@@ -35,12 +35,13 @@ Open the file and add this `CheckPassword` operation after the existing `CheckSy
         "Login": "%AccountUserName%",
         "Password": "%AccountPassword%"
     } },
-    { "Disconnect": { "ConnectionObjectName": "SshConn" } }
+    { "Disconnect": { "ConnectionObjectName": "SshConn" } },
+    { "Return": { "Value": true } }
   ]
 }
 ```
 
-This connects with the managed account's credentials. If the connection succeeds, the password is valid.
+This connects with the managed account's credentials. If the connection succeeds, the script returns `true` to indicate the password is valid. Without an explicit `Return`, SPP treats the result as a failed check.
 
 ### 3. Upload to SPP
 
