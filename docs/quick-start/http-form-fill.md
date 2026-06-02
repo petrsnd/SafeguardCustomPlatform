@@ -62,7 +62,7 @@ Replace the `CheckSystem` operation with one that fetches the login page, extrac
     { "NewHttpRequest": { "ObjectName": "LoginPostReq" } },
     { "Request": {
         "Verb": "Post",
-        "Url": "%LoginForm.Action%",
+        "Url": "/login",
         "RequestObjectName": "LoginPostReq",
         "ResponseObjectName": "LoginPostResp",
         "Content": {
@@ -87,7 +87,8 @@ You'll likely need to adjust:
 
 | What to change | How to find it |
 | --- | --- |
-| Login URL (`/login`) | Open the page in a browser and note the URL |
+| Login page URL (`/login` in the GET) | Open the page in a browser and note the URL |
+| Form POST URL (`/login` in the POST) | Inspect the `<form action="...">` attribute in the HTML source |
 | Form field names (`username`, `password`) | Inspect the `<input>` elements in the HTML source |
 | Success condition | Some sites redirect (302), others return 200 with a session cookie |
 
@@ -131,7 +132,7 @@ If it reports success, SPP can log in to your web application.
 - **`SetFormValue`** updates a field before submission — hidden fields are preserved automatically
 - Cookies persist by default (`Request.PersistCookies` defaults to `true`), so session cookies flow between requests automatically
 - **`IsSecret: true`** on password fields prevents credentials from appearing in logs
-- The form's `Action` attribute is available as `%LoginForm.Action%` for the submit URL
+- The form submission URL must be hardcoded in the `Request` — `ExtractFormData` does not extract the `<form action="...">` attribute
 
 ## Next Steps
 
