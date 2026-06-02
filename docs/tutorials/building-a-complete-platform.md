@@ -52,23 +52,37 @@ Because discovery only reads data (no interactive prompts), it works well with `
       }
     },
     {
+      "SetItem": { "Name": "Stdout", "Value": "" }
+    },
+    {
+      "SetItem": { "Name": "Stderr", "Value": "" }
+    },
+    {
+      "SetItem": { "Name": "rc", "Value": 0 }
+    },
+    {
       "ExecuteCommand": {
         "ConnectionObjectName": "SshConnection",
         "Command": "awk -F: '$3 >= 1000 && $7 !~ /nologin|false/ {print $1}' /etc/passwd",
-        "ResultVariable": "Result"
+        "BufferName": "Stdout",
+        "StderrBufferName": "Stderr",
+        "ExitStatusBufferName": "rc"
       }
     },
     {
       "Condition": {
-        "If": "(Result.rc != 0)",
+        "If": "(rc != 0)",
         "Then": { "Do": [
-          { "Throw": { "Value": "Failed to query accounts: %{ Result.Stderr }%" } }
+          { "Throw": { "Value": "Failed to query accounts: %Stderr%" } }
         ] }
       }
     },
     {
+      "SetItem": { "Name": "AccountLines", "Value": "%{ Stdout.Split('\\n') }%" }
+    },
+    {
       "ForEach": {
-        "CollectionName": "%{ Result.Stdout.Split('\\n') }%",
+        "CollectionName": "AccountLines",
         "ElementName": "acct",
         "Body": {
           "Do": [
@@ -94,8 +108,9 @@ Because discovery only reads data (no interactive prompts), it works well with `
 Key points:
 
 - **`RequestTerminal: false`** — batch mode sends a command and captures stdout/stderr directly, without needing `Send`/`Receive` prompt matching.
-- **`ExecuteCommand`** — runs a single command and returns `Result.Stdout`, `Result.Stderr`, and `Result.rc` (exit code).
-- **`ForEach`** — iterates over the split output, one account name per line.
+- **`SetItem`** — pre-declares variables (`Stdout`, `Stderr`, `rc`) before `ExecuteCommand` uses them as output buffers. The validator requires all variables to be declared before use.
+- **`ExecuteCommand`** — runs a single command; `BufferName`, `StderrBufferName`, and `ExitStatusBufferName` specify where to store the output.
+- **`ForEach`** — iterates over the split output, one account name per line. `CollectionName` must be a plain variable name, so the split is computed first with `SetItem`.
 - **`WriteDiscoveredAccount`** — reports each account to SPP. This is how discovery populates the account list.
 - The `awk` filter keeps only real user accounts (UID ≥ 1000, active shell).
 
