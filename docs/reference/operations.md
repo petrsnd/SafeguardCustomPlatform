@@ -540,6 +540,8 @@ Discovers services (Windows services, systemd units, etc.) running on the target
 
 Discovers assets (virtual machines, containers, network devices, etc.) on a target system that SPP can manage. Reports discovered assets using `WriteDiscoveredAsset` commands.
 
+> ⚠️ **Known limitation:** Asset discovery scheduling in the SPP UI may not be enabled for custom platforms even when this operation is present. See [issue #73](https://github.com/OneIdentity/SafeguardCustomPlatform/issues/73).
+
 **Triggered by:** Asset Discovery job (scheduled or manual).
 
 **Required parameters:**
