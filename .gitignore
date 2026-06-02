@@ -1,6 +1,10 @@
 # Plan file (session artifact, not part of the repo)
 plan.md
 
+# Agent-skills authoring scaffolding (working notes, not deliverables)
+agent-skills-plan.md
+.agents/prompts/
+
 # OS artifacts
 .DS_Store
 Thumbs.db

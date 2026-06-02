@@ -1,0 +1,46 @@
+name: Agent Reference Corpus
+
+on:
+  push:
+    branches: [main, feature/agent-skills]
+    paths:
+      - 'AGENTS.md'
+      - '.agents/**'
+      - 'docs/agent-reference/**'
+      - 'samples/**'
+      - 'templates/**'
+      - 'tools/Build-SamplesIndex.ps1'
+      - 'tools/Test-AgentLinks.ps1'
+      - '.github/workflows/agent-corpus.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'AGENTS.md'
+      - '.agents/**'
+      - 'docs/agent-reference/**'
+      - 'samples/**'
+      - 'templates/**'
+      - 'tools/Build-SamplesIndex.ps1'
+      - 'tools/Test-AgentLinks.ps1'
+      - '.github/workflows/agent-corpus.yml'
+
+jobs:
+  link-validity:
+    name: Agent link validity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate agent-facing relative links
+        shell: pwsh
+        run: ./tools/Test-AgentLinks.ps1
+
+  samples-index-freshness:
+    name: Samples index freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify samples-index.md is up to date
+        shell: pwsh
+        run: ./tools/Build-SamplesIndex.ps1 -CheckOnly
