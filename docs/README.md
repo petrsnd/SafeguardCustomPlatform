@@ -28,8 +28,9 @@ Choose based on what you need right now:
 ## Full Table of Contents
 
 ### Quick Start
-- [SSH Password Change in 5 Minutes](quick-start/ssh-password-change.md)
+- [SSH Password Check in 5 Minutes](quick-start/ssh-password-change.md)
 - [HTTP API Check in 5 Minutes](quick-start/http-api-check.md)
+- [HTTP Form-Fill in 5 Minutes](quick-start/http-form-fill.md)
 
 ### Concepts
 - [Architecture](concepts/architecture.md) — What custom platforms are and when you need one
@@ -60,11 +61,11 @@ Choose based on what you need right now:
 
 ### Reference
 - [Script Structure](reference/script-structure.md)
-- [Operations](reference/operations.md) (19 operations)
-- [Reserved Parameters](reference/reserved-parameters.md) (72 parameters)
+- [Operations](reference/operations.md) (22 operations)
+- [Reserved Parameters](reference/reserved-parameters.md) (74 parameters)
 - [Custom Parameters](reference/custom-parameters.md)
 - [Variables](reference/variables.md)
-- [Commands](reference/commands/) (60+ commands)
+- [Commands](reference/commands/) (56 commands)
 - [Imports](reference/imports.md)
 - [Status Messages](reference/status-messages.md)
 - [Compatibility Matrix](reference/compatibility.md)

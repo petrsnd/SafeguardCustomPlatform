@@ -6,7 +6,7 @@ Pick the path that matches your target system and get a working custom platform 
 
 | I need to manage... | Guide |
 | --- | --- |
-| A Linux/Unix system over SSH | [SSH Password Change](ssh-password-change.md) |
+| A Linux/Unix system over SSH | [SSH Password Check](ssh-password-change.md) |
 | A REST API over HTTP | [HTTP API Check](http-api-check.md) |
 | A web application with a login form | [HTTP Form-Fill](http-form-fill.md) |
 
