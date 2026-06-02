@@ -4,7 +4,9 @@
 
 Operations are the named entry points in a custom platform script that SPP invokes when performing specific tasks. Each operation you include in your script tells SPP what your platform can do — SPP automatically derives [feature flags](../concepts/feature-flags.md) from the operations present.
 
-This page documents all 24 operations available for custom platform scripts.
+This page documents the operations available for custom platform scripts.
+
+> **Note:** Some operations defined in the operation type system (`DiscoverApiKeys`, `CheckHostKey`, `CreateAdminUser`) are not yet available for custom platforms. See the [GitHub issues](https://github.com/OneIdentity/SafeguardCustomPlatform/issues) for tracking.
 
 ## Quick Reference
 
@@ -29,10 +31,7 @@ This page documents all 24 operations available for custom platform scripts.
 | [Dependencies](#updatedependentsystem) | `UpdateDependentSystem` | Service account + dependent account | `DependentSystemFl` |
 | [API Keys](#checkapikey) | `CheckApiKey` | Service account + managed account | `ApiKeyFeatureFl` |
 | [API Keys](#changeapikey) | `ChangeApiKey` | Service account + managed account | `ApiKeyFeatureFl` |
-| [API Keys](#discoverapikeys) | `DiscoverApiKeys` | Service account | — |
 | [Discovery](#discoverassets) | `DiscoverAssets` | Service account | — |
-| [Discovery](#createadminuser) | `CreateAdminUser` | Service account | — |
-| [Connection](#checkhostkey) | `CheckHostKey` | None (asset-level) | — |
 | [Files](#checkfile) | `CheckFile` | Service account + managed account | — |
 | [Files](#changefile) | `ChangeFile` | Service account + managed account | — |
 
@@ -462,7 +461,7 @@ Removes a specific SSH public key from a managed account's authorized keys store
 | `AccountUserName` | String | Account whose key to remove |
 | `OldSshKey` | String | The specific key to remove |
 
-**Feature flags derived:** `SshKeyFeatureFl` (same flag as `DiscoverAuthorizedKeys`)
+**Feature flags derived:** None. Unlike `DiscoverAuthorizedKeys`, this operation does not contribute to `SshKeyFeatureFl`.
 
 **Return value:** `true` if the key was removed successfully.
 
@@ -510,7 +509,7 @@ Discovers accounts on the target system that SPP can manage. Reports discovered 
   "Do": [
     { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%", "CheckHostKey": "%CheckHostKey%", "HostKey": "%HostKey%" } },
     { "ExecuteCommand": { "ConnectionObjectName": "ConnectSsh", "Command": "getent passwd | cut -d: -f1", "BufferName": "AccountList" } },
-    { "ForEach": { "Collection": "%AccountList.Split('\n')%", "Variable": "AcctName", "Body": { "Do": [
+    { "ForEach": { "CollectionName": "%AccountList.Split('\n')%", "ElementName": "AcctName", "Body": { "Do": [
       { "WriteDiscoveredAccount": { "Name": "%AcctName%" } }
     ] } } },
     { "Disconnect": {} },
@@ -536,6 +535,66 @@ Discovers services (Windows services, systemd units, etc.) running on the target
 **Feature flags derived:** `ServiceDiscoveryFl`
 
 **Return value:** Reports discovered services back to SPP, including which accounts they run under.
+
+### DiscoverAssets
+
+Discovers assets (virtual machines, containers, network devices, etc.) on a target system that SPP can manage. Reports discovered assets using `WriteDiscoveredAsset` commands.
+
+**Triggered by:** Asset Discovery job (scheduled or manual).
+
+**Required parameters:**
+
+| Parameter | Type | Purpose |
+| --- | --- | --- |
+| `Address` | String | Network address of the target system |
+| `FuncUserName` | String | Service account for authentication |
+| `FuncPassword` | Secret | Service account password |
+| `DiscoveryQuery` | Object | Filter criteria provided by SPP (required for asset discovery to be enabled) |
+
+**Common optional parameters:**
+
+| Parameter | Type | Purpose |
+| --- | --- | --- |
+| `AssetName` | String | Name of the asset running the discovery |
+| `Port` | Integer | Connection port |
+| `Timeout` | Integer | Operation timeout in seconds |
+
+**Feature flags derived:** None directly, but SPP enables asset discovery for the platform only when the `DiscoverAssets` operation includes a `DiscoveryQuery` parameter of type `Object`.
+
+**Return value:** Boolean operation result. Discovered assets are reported to SPP through individual `WriteDiscoveredAsset` commands. Each `WriteDiscoveredAsset` call accepts:
+
+| Field | Type | Required | Purpose |
+| --- | --- | --- | --- |
+| `Name` | String | Yes | Name of the discovered asset |
+| `Description` | String | No | Description of the asset |
+| `GuestOperatingSystem` | String | No | Operating system running on the asset |
+| `Running` | Boolean | No | Whether the asset is currently powered on |
+| `IpList` | String or Array | No | IP address(es) of the asset |
+
+**Example (SSH):**
+
+```json
+"DiscoverAssets": {
+  "Parameters": [
+    { "AssetName": { "Type": "String", "Required": false, "DefaultValue": "" } },
+    { "Address": { "Type": "String", "Required": true } },
+    { "Port": { "Type": "Integer", "Required": false, "DefaultValue": 22 } },
+    { "Timeout": { "Type": "Integer", "Required": false, "DefaultValue": 60 } },
+    { "FuncUserName": { "Type": "String", "Required": true } },
+    { "FuncPassword": { "Type": "Secret", "Required": false } },
+    { "DiscoveryQuery": { "Type": "Object", "Required": true } }
+  ],
+  "Do": [
+    { "Connect": { "ConnectionObjectName": "ConnectSsh", "Type": "Ssh", "Port": "%Port%", "NetworkAddress": "%Address%", "Login": "%FuncUserName%", "Password": "%FuncPassword%" } },
+    { "ExecuteCommand": { "ConnectionObjectName": "ConnectSsh", "Command": "virsh list --all --name", "BufferName": "VmList" } },
+    { "ForEach": { "CollectionName": "%VmList.Split('\n')%", "ElementName": "VmName", "Body": { "Do": [
+      { "WriteDiscoveredAsset": { "Name": "%VmName%", "Running": true } }
+    ] } } },
+    { "Disconnect": {} },
+    { "Return": { "Value": true } }
+  ]
+}
+```
 
 ---
 
