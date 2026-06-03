@@ -63,6 +63,19 @@ The agent declares the active mode at the start of every session. Each skill dec
 
 If the agent is unsure which mode applies, it asks the operator before proceeding.
 
+## Notation: PowerShell vs API vs concept
+
+Agent-facing material in this repo distinguishes three shapes so an agent never has to guess whether a token is a cmdlet parameter, an API field, or a transport-agnostic idea.
+
+- **PowerShell** — backtick the literal as it appears in `Get-Help <Cmdlet> -Full`. Switches stand alone; valued parameters use a space before the value.
+  - `` `-ExtendedLogging` `` (switch), `` `-TaskId <GUID>` `` (valued), `` `Connect-Safeguard -Browser` `` (cmdlet + switch).
+- **API / JSON** — backtick a PascalCase field as `Field: value`, mirroring the transfer-object shape SPP emits and accepts.
+  - `` `ExtendedLogs: true` ``, `` `OperationType: CheckPassword` ``.
+- **Concept (transport-agnostic)** — plain English, no backticks. Use this in orchestration prose where the agent should not yet be biased toward PS or API.
+  - "with extended logging enabled", "trigger the affected operation".
+
+Rule of thumb: this `AGENTS.md` speaks **concept**. The skills speak **PowerShell** (e.g., `safeguard-ps-operations`) or **API** with backticks. When a skill bridges them, it shows both forms side by side.
+
 ## Authentication and safety
 
 - **Connect with `-Browser` only.** All `safeguard-ps` connections in agent flows use `Connect-Safeguard -Browser` (interactive PKCE). No password-in-script recipes.
@@ -97,7 +110,7 @@ Use this workflow when the operator's request is to build a custom platform that
 3. **Probe the target.** Hand off to [`target-probing`](.agents/skills/target-probing/SKILL.md). The skill enforces its own probe-safety contract and produces an evidence artifact conforming to [`.agents/schemas/evidence.schema.json`](.agents/schemas/evidence.schema.json). In `author-only` mode this step is skipped and the workflow proceeds with whatever the operator can supply by hand.
 4. **Select a strategy.** Hand off to [`strategy-selection`](.agents/skills/strategy-selection/SKILL.md) with the probe evidence (or the operator-supplied substitute) and any vendor docs. Output: one of the six authoring patterns plus credential-intent and self-managed-vs-service-account.
 5. **Author the JSON.** Hand off to [`script-authoring`](.agents/skills/script-authoring/SKILL.md). The skill mandates the fast inner loop: local schema validation against [`schema/custom-platform-script.schema.json`](schema/custom-platform-script.schema.json) before any appliance round-trip. `SchemaOnly` green is necessary but not sufficient — cross-reference samples for analogous patterns before declaring ready.
-6. **Validate, import, and trigger.** Hand off to [`safeguard-ps-operations`](.agents/skills/safeguard-ps-operations/SKILL.md), which prefers [`tools/Invoke-PlatformDevLoop.ps1`](tools/Invoke-PlatformDevLoop.ps1) over re-implementing the loop. Trigger with `extendedLogging=true` so a structured task log is produced. Requires `full-loop` mode.
+6. **Validate, import, and trigger.** Hand off to [`safeguard-ps-operations`](.agents/skills/safeguard-ps-operations/SKILL.md), which prefers [`tools/Invoke-PlatformDevLoop.ps1`](tools/Invoke-PlatformDevLoop.ps1) over re-implementing the loop. Trigger with extended logging enabled so a structured task log is produced. Requires `full-loop` mode.
 7. **Analyze the task log.** Hand off to [`task-log-analysis`](.agents/skills/task-log-analysis/SKILL.md). It classifies the failure phase, extracts the actionable signal, and recommends the next iteration.
 8. **Enter the iterative debug loop** (below) until green or the loop budget triggers escalation.
 
@@ -121,7 +134,7 @@ Both workflows enter this loop after the first trigger. The loop is the same in 
 3. **Fast inner loop:** local schema validation (`Invoke-PlatformDevLoop.ps1 -SchemaOnly`). Sub-second; no appliance contact. Iterate here until clean before paying for a round-trip.
 4. **`Test-SafeguardCustomPlatformScript`** against the appliance via [`safeguard-ps-operations`](.agents/skills/safeguard-ps-operations/SKILL.md). This catches things local schema validation cannot.
 5. **Import** the script.
-6. **Trigger** the affected operation with `extendedLogging=true`.
+6. **Trigger** the affected operation with extended logging enabled.
 7. **Analyze the task log** via [`task-log-analysis`](.agents/skills/task-log-analysis/SKILL.md). Decide: green, revise, or escalate.
 
 ### Loop budget (best-effort)
@@ -164,5 +177,6 @@ Update this file when any of the following change:
 - The iterative debug-loop budget changes → update both the loop section and any skill that restates the budget in its pre-flight (currently `task-log-analysis`).
 - Files in `docs/agent-reference/` are added or moved → update the pointers in `Sample and template index` and the routing table.
 - The safeguard-ps `AGENTS.md` precedent diverges from this file in a way we want to track → update the family-consistency note above with the reason.
+- A new section is added that describes cmdlet parameters, API fields, or transport-agnostic concepts → follow the conventions in **Notation: PowerShell vs API vs concept**. Skills authored or revised after this file changes should adopt the same convention so PS / API / concept stay visually distinct across the corpus.
 
 Propose updates as part of the same change that introduces the underlying drift; do not let routing entries and skill files drift out of sync.
