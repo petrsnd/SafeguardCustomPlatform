@@ -152,7 +152,7 @@ Failure example (real output, exit 2):
 ```
 
 The **task GUID is not on the cmdlet's return value.** safeguard-ps's
-`Wait-LongRunningTask` (safeguard-ps.psm1:929 / :936) emits the line
+`Wait-LongRunningTask` emits the line
 `See extended logs: Get-SafeguardTaskLog <GUID>` via `Write-Host`
 (Information stream, 6). The script captures that stream with
 `-InformationVariable` and regex-matches `Get-SafeguardTaskLog\s+<GUID>` to
@@ -173,7 +173,8 @@ Task completed successfully.
 ```
 
 On task **failure**, safeguard-ps throws `Ex.SafeguardLongRunningTaskException`
-(sg-utilities.psm1:218) which carries a typed `TaskLog` array. The dev-loop
+(constructed by `New-LongRunningTaskException`) which carries a typed
+`TaskLog` array. The dev-loop
 script catches that, surfaces `error = exception message`, and adds a
 `taskLog` field with the structured entries.
 
@@ -205,11 +206,17 @@ password was deliberately wrong):
 }
 ```
 
-The `taskLog` element shape is fixed: `{ Timestamp, Status, Message }`.
-`Status` values seen so far: `Queued`, `Running`, `Checking`,
-`Connecting`, `Saving`, `Success`, `PasswordMismatch`, `Finalizing`.
-The first `PasswordMismatch` entry typically pins the failure to a
-specific account/asset; the last is the summary message that is also
+The `taskLog` element shape is fixed: `{ Timestamp, Status, Message }`,
+defined by
+`PangaeaAppliance\src\Data\Transfer\V2\PlatformTasks\TaskLog.cs`. `Status`
+is an enum (`PangaeaAppliance\src\Data\Transfer\V2\PlatformTasks\TaskStatus.cs`)
+with 25 stable values including `Queued`, `Running`, `Checking`,
+`Connecting`, `Changing`, `Saving`, `Finalizing`, `Success`, `Failure`,
+`Cancelled`, `Skipped`, `PasswordMismatch`, `SshHostKeyMismatch`,
+`SshKeyMismatch`, `ApiKeyMismatch`, `FileMismatch`, `Discovering`,
+`Submitted`, and assorted `Service*`/`Task*` outcomes. The first
+mismatch-class entry typically pins the failure to a specific
+account/asset; the last entry is the summary message that is also
 surfaced as the phase `error`.
 
 #### `phases[3]` (log) `data`
@@ -221,17 +228,31 @@ surfaced as the phase `error`.
 }
 ```
 
-`log` is the array returned by `Get-SafeguardTaskLog -TaskId <GUID>`. The
-appliance returns multiple named log sections concatenated in one array,
-each introduced by a separator entry whose `Recorded` and `Level` are empty
-and whose `Event` is `"--- <SectionName> ---"`. Sections seen so far:
-`SshCommunication` (raw transport-level frames), `Operation` (high-level
-platform-script execution log).
+`log` is the array returned by `Get-SafeguardTaskLog -TaskId <GUID>`. Each
+entry has shape `{Recorded, Level, Event}`. The appliance exposes named
+logs via two endpoints (`GET /Core/v4/TaskLogs/{taskId}` lists the available
+log names; `GET /Core/v4/TaskLogs/{taskId}/{logName}` returns the events
+for that named log). When `Get-SafeguardTaskLog` is called without a
+`-LogName`, safeguard-ps's `Get-SafeguardTaskLog` iterates the listed
+logs and emits a synthetic separator entry between each:
+
+```jsonc
+{ "Recorded": "", "Level": "", "Event": "--- <logName> ---" }
+```
+
+The two log names produced by SPP for platform tasks are stable string
+constants:
+
+* `Operation` — high-level platform-script execution log
+* `SshCommunication` — raw SSH transport-level frames (when applicable)
+
+Both are defined in
+`Hercules\Source\Rsms.Public\Constants\Logging.cs:14-15`.
 
 Real entry shapes:
 
 ```jsonc
-// Section header
+// Section header (synthesised by safeguard-ps, not the appliance)
 { "Recorded": "", "Level": "", "Event": "--- Operation ---" }
 // Operation entry
 { "Recorded": "2026-06-02T23:55:35.4880454Z",
@@ -244,10 +265,13 @@ Real entry shapes:
 ```
 
 **Secret handling.** SPP server-side redacts known credential parameters as
-`**secret**` before returning the log. Agents should NOT attempt to recover
-real values from these markers. Custom-script authors who introduce new
-secret parameters should declare them with `Type: "Secret"` so SPP applies
-the same redaction.
+the literal string `**secret**` before returning the log. The redaction
+constant is defined in
+`Hercules\Source\Hercules.DevKit\Constants\ParameterConstants.cs:5`
+(`public const string Secret = "**secret**"`).
+Agents should NOT attempt to recover real values from these markers.
+Custom-script authors who introduce new secret parameters should declare
+them with `Type: "Secret"` so SPP applies the same redaction.
 
 The log fetch is best-effort even when the trigger fails: if the trigger
 phase fails (status = failed, exit 3) **and** a task GUID was extracted,
@@ -268,7 +292,7 @@ message in `phases[3].error`, and exits 4. The same error path covers
 the case where the trigger ran without `-ExtendedLogging`: in that mode
 safeguard-ps's `Wait-LongRunningTask` only emits the
 `See extended logs: <GUID>` Information-stream line when extended logging
-is on (safeguard-ps.psm1:929/:936), so the dev-loop script always passes
+is on, so the dev-loop script always passes
 `-ExtendedLogging` to the trigger cmdlet — making this exit code primarily
 a guard against transient appliance issues (revoked session, log-archive
 churn) rather than a normal authoring failure.
@@ -359,12 +383,12 @@ Cmdlets the script calls. Syntax sourced from `Get-Help <Cmdlet> -Full`
 against the installed module — not paraphrased from memory:
 
 * `Test-Json` (`Microsoft.PowerShell.Utility`, PS 7+) — local schema check
-* `Test-SafeguardCustomPlatformScript` — appliance dry-run validation
-* `Import-SafeguardCustomPlatformScript` — upload script to a platform
-* `Test-SafeguardAssetAccountPassword` — CheckPassword trigger
-* `Invoke-SafeguardAssetAccountPasswordChange` — ChangePassword trigger
-* `Get-SafeguardTaskLog` — fetch extended log by task GUID
+* `Test-SafeguardCustomPlatformScript` — POSTs the script to `Core/Platforms/ValidateScript/Raw`; returns the platform-preview object the script would produce
+* `Import-SafeguardCustomPlatformScript` — PUTs the script to `Core/Platforms/{Id}/Script/Raw`, then re-reads the platform via `Get-SafeguardCustomPlatform` and returns it
+* `Test-SafeguardAssetAccountPassword` — CheckPassword trigger (calls `POST Core/v4/AssetAccounts/{id}/CheckPassword?extendedLogging=true`; appliance handler `AssetAccountsController_Tasks.cs::CheckPasswordAsync`)
+* `Invoke-SafeguardAssetAccountPasswordChange` — ChangePassword trigger (calls `POST Core/v4/AssetAccounts/{id}/ChangePassword?extendedLogging=true`; appliance handler `AssetAccountsController_Tasks.cs::ChangePasswordAsync`)
+* `Get-SafeguardTaskLog` — when no `-LogName` is given, calls `GET Core/TaskLogs/{taskId}` to list available logs, then iterates each via `GET Core/TaskLogs/{taskId}/{logName}`; emits a synthetic `--- <logName> ---` separator entry between sections
 
 The trigger cmdlets call `Invoke-SafeguardMethod -LongRunningTask` under
 the hood, which polls until `RequestStatus.PercentComplete == 100` and
-emits the extended-log hint via `Write-Host` (safeguard-ps.psm1:929/:936).
+emits the extended-log hint via `Write-Host` from `Wait-LongRunningTask`.

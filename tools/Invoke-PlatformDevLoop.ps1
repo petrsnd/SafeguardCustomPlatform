@@ -181,7 +181,8 @@ function Get-TaskIdFromInformationMessages {
     # (Information stream) when a triggered task with extendedLogging completes
     # or fails:
     #     "See extended logs: Get-SafeguardTaskLog <GUID>"
-    # Source: safeguard-ps/safeguard-ps.psm1, lines 929 and 936 (v8.4.1).
+    # Source: safeguard-ps Wait-LongRunningTask (the two extendedLogging
+    # branches that emit "See extended logs:"); verified against v8.4.1.
     # The GUID is not exposed on the cmdlet's return value (which is a
     # human-readable multi-line string), so capturing Information messages and
     # regex-matching this line is the grounded extraction path.
