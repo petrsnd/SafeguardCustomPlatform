@@ -85,42 +85,84 @@ Other agent-reference material:
 
 ## Workflow: new platform
 
-<!-- Authored in Phase 4 (see agent-skills-plan.md §6 Phase D). Algorithm:
-gather requirements -> search samples-index + vendor docs -> target-probing
--> strategy-selection -> script-authoring -> safeguard-ps-operations
--> task-log-analysis -> iterative debug loop until green. -->
+Use this workflow when the operator's request is to build a custom platform that does not yet exist in the appliance.
 
-_To be authored in Phase 4._
+1. **Gather requirements.** Classify intent (new vs enhance — this workflow is *new*), then collect what is missing:
+   - Target system (vendor, product, version) and protocol (SSH or HTTP — telnet is out of scope).
+   - Operations needed (`CheckSystem`, `CheckPassword`, `ChangePassword`, optionally `DiscoverAccounts`).
+   - **Credential intent** — self-managed (the managed account rotates its own password) vs service-account (a separate account rotates the managed one).
+   - Any vendor documentation the operator can share (URL the agent fetches, or an excerpt pasted into the conversation — both first-class).
+   Ask only what is missing. Do not re-ask for facts the operator already provided.
+2. **Search samples-index + vendor docs.** Look up a starting point in [`docs/agent-reference/samples-index.md`](docs/agent-reference/samples-index.md) by `(protocol, auth-scheme, operations)`. If vendor docs are needed, use [`docs/agent-reference/vendor-doc-search-recipes.md`](docs/agent-reference/vendor-doc-search-recipes.md). The starting sample is just that — a starting point — not a constraint.
+3. **Probe the target.** Hand off to [`target-probing`](.agents/skills/target-probing/SKILL.md). The skill enforces its own probe-safety contract and produces an evidence artifact conforming to [`.agents/schemas/evidence.schema.json`](.agents/schemas/evidence.schema.json). In `author-only` mode this step is skipped and the workflow proceeds with whatever the operator can supply by hand.
+4. **Select a strategy.** Hand off to [`strategy-selection`](.agents/skills/strategy-selection/SKILL.md) with the probe evidence (or the operator-supplied substitute) and any vendor docs. Output: one of the six authoring patterns plus credential-intent and self-managed-vs-service-account.
+5. **Author the JSON.** Hand off to [`script-authoring`](.agents/skills/script-authoring/SKILL.md). The skill mandates the fast inner loop: local schema validation against [`schema/custom-platform-script.schema.json`](schema/custom-platform-script.schema.json) before any appliance round-trip. `SchemaOnly` green is necessary but not sufficient — cross-reference samples for analogous patterns before declaring ready.
+6. **Validate, import, and trigger.** Hand off to [`safeguard-ps-operations`](.agents/skills/safeguard-ps-operations/SKILL.md), which prefers [`tools/Invoke-PlatformDevLoop.ps1`](tools/Invoke-PlatformDevLoop.ps1) over re-implementing the loop. Trigger with `extendedLogging=true` so a structured task log is produced. Requires `full-loop` mode.
+7. **Analyze the task log.** Hand off to [`task-log-analysis`](.agents/skills/task-log-analysis/SKILL.md). It classifies the failure phase, extracts the actionable signal, and recommends the next iteration.
+8. **Enter the iterative debug loop** (below) until green or the loop budget triggers escalation.
 
 ## Workflow: enhance platform
 
-<!-- Authored in Phase 4. Algorithm: Export-SafeguardCustomPlatformScript
-(deployed JSON is authoritative; on-disk samples are a starting point that
-gets adjusted, drift is expected and benign) -> diff-aware authoring ->
-iterative debug loop, re-triggering only operations affected by the change. -->
+Use this workflow when the operator wants to change a platform that is already deployed on the appliance.
 
-_To be authored in Phase 4._
+1. **Gather requirements.** What operation is changing, what new behavior is expected, what existing behavior must not regress. Ask only what is missing.
+2. **Source the current JSON via export.** Run `Export-SafeguardCustomPlatformScript` against the appliance (via [`safeguard-ps-operations`](.agents/skills/safeguard-ps-operations/SKILL.md)). **The deployed copy is authoritative for the diff.** On-disk samples in `samples/` are starting points that get adjusted for a specific target — drift between the deployed JSON and any on-disk sample is expected and benign. Do not treat a sample as a substitute for the export.
+3. **Diff-aware authoring.** Hand off to [`script-authoring`](.agents/skills/script-authoring/SKILL.md) with the exported JSON as the base. Limit the change set to what the requirement demands; do not opportunistically rewrite unrelated operations. The fast inner loop (local schema validation) still runs before any appliance round-trip.
+4. **Validate, import, and trigger only operations affected by the change.** A `ChangePassword` edit does not require re-testing `DiscoverAccounts`. Re-triggering everything wastes the loop budget and obscures which change caused which symptom.
+5. **Analyze the task log** for each affected operation via [`task-log-analysis`](.agents/skills/task-log-analysis/SKILL.md).
+6. **Enter the iterative debug loop** (below) until green or the loop budget triggers escalation.
 
 ## Iterative debug loop
 
-<!-- Authored in Phase 4. Algorithm: try manually (probe) -> draft/revise JSON
--> fast inner loop (local schema validation) -> Test-SafeguardCustomPlatformScript
--> import -> trigger with extendedLogging=true -> analyze task log -> green /
-revise / escalate. Loop budget: stop and escalate after 3 failures sharing
-the same error signature OR 10 total iterations, whichever comes first.
-Each iteration must produce a changed draft; if the agent cannot articulate
-what changed, escalate early. -->
+Both workflows enter this loop after the first trigger. The loop is the same in both cases.
 
-_To be authored in Phase 4._
+1. **Try manually first** (when probe-only or full-loop is available). Reproduce the operation against the target with the seed credential before changing the JSON. If the manual attempt fails, the JSON is not the right thing to fix yet — re-probe.
+2. **Draft or revise the JSON** via [`script-authoring`](.agents/skills/script-authoring/SKILL.md).
+3. **Fast inner loop:** local schema validation (`Invoke-PlatformDevLoop.ps1 -SchemaOnly`). Sub-second; no appliance contact. Iterate here until clean before paying for a round-trip.
+4. **`Test-SafeguardCustomPlatformScript`** against the appliance via [`safeguard-ps-operations`](.agents/skills/safeguard-ps-operations/SKILL.md). This catches things local schema validation cannot.
+5. **Import** the script.
+6. **Trigger** the affected operation with `extendedLogging=true`.
+7. **Analyze the task log** via [`task-log-analysis`](.agents/skills/task-log-analysis/SKILL.md). Decide: green, revise, or escalate.
+
+### Loop budget (best-effort)
+
+Stop and escalate to the operator when **either** of these is true:
+
+- **3 failures share the same error signature.** Repeated identical failures mean the current hypothesis is wrong, not that one more tweak will work. The classification produced by [`task-log-analysis`](.agents/skills/task-log-analysis/SKILL.md) is what defines "same signature."
+- **10 total iterations** have run, whichever comes first.
+
+Two reinforcing rules:
+
+- **Each iteration must produce a changed draft.** If the agent cannot articulate what changed since the prior iteration in one sentence, escalate early — looping with no real change is the most expensive failure mode.
+- **The counter is not persisted.** Context compaction or shell restart resets it. The desktop operator is the backstop: if the operator notices the loop has restarted twice on the same problem, that is the signal to escalate regardless of the in-memory counter.
 
 ## Routing table
 
-<!-- Filled in Phase 4. Each row points at one skill with its triggers and
-the canonical SKILL.md path. Five rows: target-probing, strategy-selection,
-safeguard-ps-operations, script-authoring, task-log-analysis. -->
+The five capability skills. Each `SKILL.md` opens with a pre-flight pointer back to this file; that is convention, not enforcement.
 
-_To be authored in Phase 4._
+| Skill | When to load | Modes | File |
+| --- | --- | --- | --- |
+| `target-probing` | The agent must learn how a live target actually behaves before authoring or revising — banner grab, auth-scheme detection, prompt shape, sudo behavior, login-form/API discovery. Produces the structured evidence artifact consumed by `strategy-selection` and `script-authoring`. | `probe-only`, `full-loop` | [`.agents/skills/target-probing/SKILL.md`](.agents/skills/target-probing/SKILL.md) |
+| `strategy-selection` | A pattern decision is needed: `ssh-interactive` vs `ssh-batch`; `http-form-fill` vs API; `basic` / `bearer` / `api-key`; password vs SSH key vs API key; self-managed vs service-account. Accepts probe evidence, fetched URLs, and pasted vendor-doc excerpts. | `author-only`, `probe-only`, `full-loop` | [`.agents/skills/strategy-selection/SKILL.md`](.agents/skills/strategy-selection/SKILL.md) |
+| `script-authoring` | Drafting or revising the platform JSON. Six pattern recipes (`ssh-interactive`, `ssh-batch`, `http-api-basic`, `http-api-bearer`, `http-api-key`, `http-form-fill`). Mandates the fast inner loop (local schema validation) before any appliance round-trip. | `author-only`, `probe-only`, `full-loop` | [`.agents/skills/script-authoring/SKILL.md`](.agents/skills/script-authoring/SKILL.md) |
+| `safeguard-ps-operations` | Driving a live SPP appliance through `safeguard-ps`: `Connect-Safeguard -Browser`, `Test-` / `Import-` / `Export-SafeguardCustomPlatformScript`, asset/account create-or-update, triggering operations with extended logging, fetching task-log JSON. Wraps [`tools/Invoke-PlatformDevLoop.ps1`](tools/Invoke-PlatformDevLoop.ps1). All cmdlet syntax must come from `Get-Help <Cmdlet> -Full`. | `full-loop` (most operations); `author-only` for `Test-` and `Export-` against a local file | [`.agents/skills/safeguard-ps-operations/SKILL.md`](.agents/skills/safeguard-ps-operations/SKILL.md) |
+| `task-log-analysis` | An operation has run and produced an extended task log that must be classified (`connect` / `auth` / `parse` / `operation` / `unknown`) and turned into a next step. Backed by [`docs/agent-reference/failure-patterns.md`](docs/agent-reference/failure-patterns.md), which ships empty and grows only from real runs. | `full-loop` (live log); `author-only` (saved JSON file) | [`.agents/skills/task-log-analysis/SKILL.md`](.agents/skills/task-log-analysis/SKILL.md) |
+
+### Family-consistency note
+
+The structure here matches the safeguard-ps `AGENTS.md` precedent (overview → project structure → conventions → on-demand skills routing table → "Keeping this file current"). Two intentional deviations:
+
+- **Workflows live in this file** rather than as separate skills. They are orchestration, which is what `AGENTS.md` is for; promoting them to skills would create load-order ambiguity with the routing table. (See `agent-skills-plan.md` §4–§5.)
+- **The routing table includes a `Modes` column.** This repo has explicit `author-only` / `probe-only` / `full-loop` modes; safeguard-ps does not. Surfacing modes in the table prevents an agent from loading a skill in a mode where it fails closed.
 
 ## Keeping this file current
 
-After completing tasks, propose updates for new patterns, corrections, or skill changes. Update the routing table when skills are added, renamed, or retired, and keep the agent-reference pointers aligned with the actual files in `docs/agent-reference/`.
+Update this file when any of the following change:
+
+- A skill is added, renamed, retired, or its supported modes change → update the routing table and any workflow step that references it.
+- A workflow step is added, removed, or reordered → update both `Workflow: new platform` and `Workflow: enhance platform` so they stay aligned.
+- The iterative debug-loop budget changes → update both the loop section and any skill that restates the budget in its pre-flight (currently `task-log-analysis`).
+- Files in `docs/agent-reference/` are added or moved → update the pointers in `Sample and template index` and the routing table.
+- The safeguard-ps `AGENTS.md` precedent diverges from this file in a way we want to track → update the family-consistency note above with the reason.
+
+Propose updates as part of the same change that introduces the underlying drift; do not let routing entries and skill files drift out of sync.
