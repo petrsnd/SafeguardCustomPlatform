@@ -6,10 +6,23 @@ Tooling for the SafeguardCustomPlatform repo.
 |---|---|---|
 | `TestTool.ps1` | Original human-facing upload + trigger script. Edit-in-place script with hard-coded variables. | Humans |
 | `Build-SamplesIndex.ps1` | Regenerates `docs/agent-reference/samples-index.md` from `samples/` and `templates/`. | CI + agents |
+| `Build-ImportsSignatures.ps1` | Regenerates `docs/agent-reference/imports-signatures.md` from the appliance's import-library JSON. **Maintainer-only — requires access to a Hercules source checkout.** | Maintainers only |
 | `Test-AgentLinks.ps1` | Validates relative links in `AGENTS.md` and `.agents/skills/*/SKILL.md` against `docs/agent-reference/`. | CI |
 | `Invoke-PlatformDevLoop.ps1` | Structured dev-loop wrapper: validate → import → trigger → fetch task log. JSON output, phase-indexed exit codes. | Agents (Phase 3 `safeguard-ps-operations` skill) and humans |
 
-The remainder of this document covers `Invoke-PlatformDevLoop.ps1`.
+> **Note for customers and forkers:** `Build-ImportsSignatures.ps1` is the
+> only script in this directory that cannot be run from a clean clone of the
+> public repo. It reads the import-library source JSON files that ship inside
+> the SPP appliance build, which are not part of any public distribution.
+> Maintainers run it when the appliance ships new or updated import libraries
+> and commit the regenerated `docs/agent-reference/imports-signatures.md`
+> alongside their other changes. The generated `.md` is the artifact you
+> consume; the script itself is informational. See
+> [`Build-ImportsSignatures.ps1`](#build-importssignaturesps1) below for
+> details.
+
+The remainder of this document covers `Invoke-PlatformDevLoop.ps1` and
+`Build-ImportsSignatures.ps1`.
 
 ---
 
@@ -392,3 +405,89 @@ against the installed module — not paraphrased from memory:
 The trigger cmdlets call `Invoke-SafeguardMethod -LongRunningTask` under
 the hood, which polls until `RequestStatus.PercentComplete == 100` and
 emits the extended-log hint via `Write-Host` from `Wait-LongRunningTask`.
+
+---
+
+## Build-ImportsSignatures.ps1
+
+> **Maintainer-only.** This script reads import-library JSON files from a
+> Hercules source checkout. Customers cloning this public repo do not have
+> access to those files and cannot run the script. The artifact customers
+> use is the committed
+> [`docs/agent-reference/imports-signatures.md`](../docs/agent-reference/imports-signatures.md)
+> that this script regenerates.
+
+### What it does
+
+The 17 `Imports` libraries listed in
+[`docs/reference/imports.md`](../docs/reference/imports.md) are implemented
+as JSON platform-script fragments inside the SPP appliance build. This
+script extracts each function's actual signature (parameter names, types,
+required/optional flags, defaults) plus caller-scope variable references,
+function-call dependencies, locally-set variables, and literal returns,
+and emits a machine-first markdown reference at
+[`docs/agent-reference/imports-signatures.md`](../docs/agent-reference/imports-signatures.md).
+
+It never executes a script body or contacts an appliance; it is a pure
+JSON-to-markdown transform that is safe to dry-run repeatedly.
+
+### When you need to update something
+
+These libraries are effectively frozen interfaces (per
+[`docs/reference/imports.md`](../docs/reference/imports.md) — most have
+been unchanged since 2018), so updates are rare. Two paths:
+
+**One function changed (typical).** Hand-edit
+`docs/agent-reference/imports-signatures.md` directly. The file is
+human-readable markdown; find the function entry, fix the line, commit.
+Faster than running the generator and produces a smaller diff for
+reviewers.
+
+**Multiple functions changed, a library was added or renamed, or you do
+not trust the existing entry.** Regenerate from source:
+
+```powershell
+.\tools\Build-ImportsSignatures.ps1 `
+    -HerculesImportsPath 'X:\path\to\Hercules\Source\Hercules.WebService\PlatformDefinitions\System\Imports'
+```
+
+Review the diff before committing. The generator overwrites the whole
+file, so any prior hand-edits get reset to whatever the source JSON says
+— make sure that is what you want.
+
+### Parameters
+
+- `-HerculesImportsPath` (required, no default) — path to
+  `Hercules\Source\Hercules.WebService\PlatformDefinitions\System\Imports`
+  in a Hercules checkout. The script throws if any expected library file
+  is missing under that path.
+- `-OutputPath` (optional) — defaults to
+  `docs/agent-reference/imports-signatures.md` relative to the script.
+- `-Libraries` (optional) — array of library names to process. Defaults
+  to the 17 generic SSH-oriented libraries documented in
+  `docs/reference/imports.md`. Pass a single name when sanity-checking
+  the generator against one library:
+
+  ```powershell
+  .\tools\Build-ImportsSignatures.ps1 `
+      -HerculesImportsPath '...\Imports' `
+      -Libraries LinuxSshLogin `
+      -OutputPath .\scratch.md
+  ```
+
+### Why no CI integration
+
+`tools/Build-SamplesIndex.ps1` runs in CI because all its inputs ship in
+this public repo. `Build-ImportsSignatures.ps1` cannot, because its inputs
+come from a private appliance build. The committed `.md` is therefore the
+source of truth between maintainer runs.
+
+### What gets extracted
+
+| Field | How it is derived |
+| --- | --- |
+| Parameters | Each entry of `Functions[].Parameters[]` is an object with one key (the parameter name) whose value carries `Type`, `Required` (defaults to `true` when absent), `DefaultValue`, `Description`. |
+| Caller-scope reads | All `%VarName%`, `%VarName::$%`, and identifiers extracted from `%{ ... }%` expressions and `"If": "..."` predicates, minus declared parameters and locally-set names. |
+| Calls | Every `"Function": { "Name": "X" }` invocation in the body. |
+| Sets locally | Every `"SetItem": { "Name": "X" }`, `"BufferName": "X"`, `"ResultVariable": "X"`, and `"ConnectionObjectName": "X"` write inside the body. |
+| Returns | Literal values from `"Return": { "Value": ... }` (booleans, numbers, quoted strings, and variable references). Expression-valued returns are not categorised. |

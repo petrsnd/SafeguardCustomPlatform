@@ -15,6 +15,18 @@ When this catalog has rows, each one is grounded in:
 
 Until Phase 5/F runs, `task-log-analysis` falls back to its classification flow (connect / auth / parse / operation / unknown) and asks the operator for guidance on signatures it has not seen before.
 
+## Validate-phase errors
+
+Errors raised by `Test-SafeguardCustomPlatformScript` (and equivalent server-side import validation) are **not** extended task-log failures — they are caught before the script ever runs. They are catalogued separately so the strict provenance rule above is preserved for the trigger-time table.
+
+Each row is grounded in a real `Test-SafeguardCustomPlatformScript` response captured during authoring.
+
+| signature | likely cause | recommended fix | first observed |
+| --- | --- | --- | --- |
+| `Function 'X' expects N parameters, but is being called with M` | Caller is passing the wrong number of positional args to an imported function. The public docs at `docs/reference/imports.md` only list function names, not signatures, so authors guess. | Cross-reference [`imports-signatures.md`](imports-signatures.md) for the real parameter list. Pad or trim the `Parameters` array in the call site to match. Empty positional slots use `""` for optional string params. | 2025-01 / generic-linux (LoginSsh, observed during Phase 5 maiden voyage) |
+
+## Trigger-time errors (from extended task logs)
+
 <!--
 Schema for future rows (locked down in Phase 5/F):
 
