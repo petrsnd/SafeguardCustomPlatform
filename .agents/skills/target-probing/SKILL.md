@@ -111,6 +111,8 @@ Two SSH-client traps to avoid:
 - **Native `ssh` cannot pass a password non-interactively** — it prompts, and `-o BatchMode=yes` refuses password auth outright. Use native `ssh` only for key-based auth, or skip it and use paramiko.
 - **Banned: `wsl sshpass …` chained from PowerShell.** Cross-shell I/O between WSL and the parent PowerShell wedges silently — the command produces no output and never returns. If WSL is the right environment for some reason, run from inside a WSL shell, not PowerShell calling into WSL.
 
+Every SSH probe opens with `paramiko.SSHClient.connect()`; that call is itself the auth probe. If it raises `AuthenticationException`, stop the playbook on that finding (per *Surface blockers immediately* above) — do not run downstream probes against a credential the agent already knows fails. `prompt` and `batch-mode` below presuppose auth has succeeded; their results are about the target's *shell*, not the credential. A batch-mode failure with auth-failure noise in the log is an auth finding, not a batch-mode finding.
+
 ### `prompt` — what does the shell look like?
 
 `ssh -o StrictHostKeyChecking=accept-new <user>@<host>` and observe:
