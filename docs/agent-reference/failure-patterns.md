@@ -23,7 +23,7 @@ Each row is grounded in a real `Test-SafeguardCustomPlatformScript` response cap
 
 | signature | likely cause | recommended fix | first observed |
 | --- | --- | --- | --- |
-| `Function 'X' expects N parameters, but is being called with M` | Caller is passing the wrong number of positional args to an imported function. The public docs at `docs/reference/imports.md` only list function names, not signatures, so authors guess. | Cross-reference [`imports-signatures.md`](imports-signatures.md) for the real parameter list. Pad or trim the `Parameters` array in the call site to match. Empty positional slots use `""` for optional string params. | 2025-01 / generic-linux (LoginSsh, observed during Phase 5 maiden voyage) |
+| `Function 'X' expects N parameters, but is being called with M` | Caller is passing the wrong number of positional args to an imported (or local) function. The public docs at `docs/reference/imports.md` deliberately do not list signatures because the deployed appliance's view can drift from any external reference. | Grep `samples/` for `"Name": "X"` and copy the `Parameters` array from a working call site that imports the same library. If no sample exercises the call, attempt the call with a guess and read the appliance's `expects N` error literally — the appliance is authoritative for its own deployed signature. Order in the array is positional; calls do not name their parameters. | 2025-01 / generic-linux (LoginSsh observed during Phase 5 maiden voyage; Hercules `master` declared 4 params but appliance and 14 of 15 sample call sites use 3) |
 
 ## Trigger-time errors (from extended task logs)
 

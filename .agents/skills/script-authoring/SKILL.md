@@ -74,6 +74,18 @@ Before declaring a draft "ready to import," cross-reference an analogous sample 
 
 If a `Do`-block construct does not appear in any sample or template, **stop and ask** before adding it. The grounding rule applies inside the JSON, not just around it.
 
+### Function-call signatures: copy from samples, do not infer
+
+When emitting a `Function` call — whether to a locally-defined function, an imported library function, or anything else with a name and `Parameters` array — the agent **must** find at least one working call site for that function in `samples/` and copy the `Parameters` array shape verbatim.
+
+- The call's `Parameters` field is a positional array; calls do not name their arguments. Order matters; arity matters.
+- Public prose docs (e.g., [`docs/reference/imports.md`](../../../docs/reference/imports.md)) list library and function names but **deliberately do not document call signatures**. That is not an oversight — the deployed appliance's view of an imported function's arity can drift from any external reference, including the upstream source it was built from. Samples are the only source of call shapes that round-trip through CI against shipped appliances.
+- Search the whole `samples/` tree, not just the closest production sample for the active pattern. A function may be imported by several samples in different sub-trees.
+- If no sample exercises the call you need, **stop and ask** the operator. The fallback is empirical probing via `Test-SafeguardCustomPlatformScript`: submit a call with a deliberate-arity guess and read the appliance's `expects N parameters` error literally. The appliance is authoritative for its own deployed signature. That probe is a [`safeguard-ps-operations`](../safeguard-ps-operations/SKILL.md) action, not this skill's.
+- Do not pad with `""` to match a guessed arity, do not reorder a sample's call to "look more logical," and do not infer a parameter from a function name.
+
+If a sample's call site uses 3 args and another uses 4, that is a real signal: either the function is overloaded, or one of those samples shadows the import with a locally-defined function of the same name. Read the sample's `Imports` and `Functions` blocks before copying — the right call site is the one whose enclosing script imports the same library yours does.
+
 ## Pattern recipes
 
 ### ssh-interactive
