@@ -176,11 +176,12 @@ If the operator triggered an operation without `-ExtendedLogging`, the task ID c
 
 ## Cmdlet quirks
 
-Three small gotchas that each cost an iteration on first encounter:
+Four small gotchas that each cost an iteration on first encounter:
 
 - **`-TaskId` requires a `[guid]` cast.** `Get-SafeguardTaskLog -TaskId "<id-string>"` rejects a bare string. Cast at the call site: `Get-SafeguardTaskLog -TaskId ([guid]$id)`.
 - **Task-log GUID lists are lexicographic, not chronological.** v1 GUIDs from the appliance are not time-ordered; sorting and taking the "last" item finds the wrong task. To identify the task a trigger just produced, **diff** the GUID set before and after the trigger and pick the new entry.
 - **`SshCommunication` sub-log is empty for non-script-engine paths.** Built-in operations such as host-key discovery (`Invoke-SafeguardAssetSshHostKeyDiscovery`) run through a different runtime than scripted custom-platform operations; an empty `SshCommunication` array on those tasks is normal, not a failure signal. Read the `Operation` log for those.
+- **`Invoke-SafeguardAssetAccountDiscovery` (and similar long-running operation triggers) return as soon as the task is `Accepted`, not when it completes.** The returned object has `RequestStatus.State = "Accepted"` and `PercentComplete = 0` because the appliance has only queued the task. Querying `Get-SafeguardDiscoveredAccount` (or any other "did the operation produce results yet" cmdlet) immediately after the trigger returns zero rows that look like a script failure but are just an unfinished task. Wait for the task to reach a terminal state before reading results — either poll the task's `RequestStatus.State` until it is no longer `Accepted`/`Running`, or pull the task log (the new GUID identified via the diff approach above) and confirm a `Success` / failure record before consuming downstream data.
 
 ## Use `Invoke-PlatformDevLoop.ps1` instead of re-implementing the loop
 
