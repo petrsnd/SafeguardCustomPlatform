@@ -119,6 +119,7 @@ Stop and escalate to the operator when **either** of these is true:
 Two reinforcing rules:
 
 - **Each iteration must produce a changed draft.** If the agent cannot articulate what changed since the prior iteration in one sentence, escalate early — looping with no real change is the most expensive failure mode.
+- **On operator correction, stop the current tactic.** Before responding or retrying, restate the active skill and the specific rule the correction invoked (e.g., "script-authoring — fast inner loop runs before any appliance round-trip"). Then resume. Arguing the correction or pivoting to a new tactic without re-grounding is how a single misread compounds into three wasted iterations.
 - **The counter is not persisted.** Context compaction or shell restart resets it. The desktop operator is the backstop: if the operator notices the loop has restarted twice on the same problem, that is the signal to escalate regardless of the in-memory counter.
 
 ## Routing table
