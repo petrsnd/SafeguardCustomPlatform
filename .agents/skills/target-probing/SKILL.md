@@ -50,7 +50,7 @@ Every probing session produces one evidence artifact, conforming to [`.agents/sc
 
 Protocol-specific findings live under `sshFindings` or `httpFindings`. The v0 schema marks the internal shapes of these as TODO and intentionally permissive; this skill is the first consumer to populate them. When the playbooks below settle on a final shape, propose a schema bump as a follow-up — do not silently invent fields the schema rejects.
 
-`strategyHints` is optional. Use it sparingly: it signals to `strategy-selection` that probing strongly favours one of the six authoring patterns. The `rationale` must cite a specific `probeRecord.id`, not a generic statement.
+`strategyHints` is optional. Use it sparingly: it signals to `strategy-selection` that probing strongly favours one of the four authoring patterns. The `rationale` must cite a specific `probeRecord.id`, not a generic statement.
 
 ## Pre-flight echo template
 

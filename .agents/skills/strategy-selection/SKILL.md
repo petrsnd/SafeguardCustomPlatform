@@ -4,8 +4,11 @@ description: >-
   Use to decide the implementation approach for a custom platform from
   protocol, vendor documentation, and probe evidence. Maps inputs to a
   recommendation across SSH (interactive vs batch) and HTTP (form-fill
-  vs API; basic / bearer / api-key; password vs key vs API key;
-  self-managed vs service-account). Accepts both fetched URLs and
+  vs api). For http-api, also picks the auth shape — HttpAuth-managed
+  (Basic, Digest) vs script-managed header (Bearer, custom Authorization
+  scheme, custom-header API key) — and one-step vs two-step token fetch.
+  Plus credential intent (password / SSH key / API key / bearer token)
+  and self-managed vs service-account. Accepts both fetched URLs and
   vendor-doc excerpts the user pasted into the conversation.
 ---
 
@@ -17,16 +20,20 @@ Before recommending a pattern, consult [`AGENTS.md`](../../../AGENTS.md) for the
 
 ## Scope
 
-Map `(protocol, vendor docs, probe evidence)` to one of the six authoring patterns covered by [`script-authoring`](../script-authoring/SKILL.md):
+Map `(protocol, vendor docs, probe evidence)` to one of the four authoring patterns covered by [`script-authoring`](../script-authoring/SKILL.md):
 
 - `ssh-interactive`
 - `ssh-batch`
-- `http-api-basic`
-- `http-api-bearer`
-- `http-api-key`
+- `http-api`
 - `http-form-fill`
 
-Plus two orthogonal dimensions: **credential intent** (password / SSH key / API key / bearer token) and **self-managed vs service-account**.
+When `http-api` is the recommendation, also pick:
+
+- **Auth shape bucket.** *HttpAuth-managed* (Basic, Digest) vs *script-managed header* (Bearer, custom `Authorization` scheme, custom-header API key).
+- **Specific scheme** within the bucket (e.g., `Bearer` vs `PVEAPIToken=…` vs `X-API-Key`).
+- **One-step vs two-step** — does the operator already hold the credential the script presents on every call (one-step), or must the script POST credentials to a token endpoint first (two-step)?
+
+Plus two orthogonal dimensions that apply to every pattern: **credential intent** (password / SSH key / API key / bearer token) and **self-managed vs service-account**.
 
 ## Modes
 
@@ -80,17 +87,18 @@ The detailed rules per branch are in the decision tree. The skill-level meta-rul
 
 ## Self-managed vs service-account
 
-Orthogonal to the six patterns. Decide based on vendor docs and probe evidence, not assumption (see the "Self-managed vs service-account" section of the decision tree). When in doubt, ask the operator which mode the deployment will use — the answer changes which operations the script must implement and may bring `service-account` parameters (like a separate `FuncUsername`/`FuncPassword`) into scope.
+Orthogonal to the four patterns. Decide based on vendor docs and probe evidence, not assumption (see the "Self-managed vs service-account" section of the decision tree). When in doubt, ask the operator which mode the deployment will use — the answer changes which operations the script must implement and may bring `service-account` parameters (like a separate `FuncUsername`/`FuncPassword`) into scope.
 
 ## Output
 
 The skill emits a short structured recommendation to whichever caller asked, typically `script-authoring` next:
 
-- **Recommended pattern** — one of the six.
+- **Recommended pattern** — one of the four.
+- **For `http-api`:** auth shape bucket + specific scheme + one-step vs two-step.
 - **Credential intent** — one of the schema-defined kinds.
 - **Self-managed vs service-account** — pick or "ask operator".
 - **Citations** — the decision-tree row that drove the choice, the vendor-doc record, and the relevant `probeRecord.id`s from the evidence artifact.
 - **Open questions** — anything the agent could not decide with the available evidence. Surface these to the operator before authoring rather than after.
 
-When evidence is incomplete, the recommendation is allowed to be conditional ("`http-api-bearer` if vendor confirms the token endpoint at `/oauth/token`; otherwise re-probe and revisit"). A conditional recommendation is preferable to a confident guess.
+When evidence is incomplete, the recommendation is allowed to be conditional ("`http-api` with two-step Bearer if vendor confirms the token endpoint at `/oauth/token`; otherwise re-probe and revisit"). A conditional recommendation is preferable to a confident guess.
 

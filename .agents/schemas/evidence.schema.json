@@ -118,13 +118,11 @@
       "properties": {
         "preferredPattern": {
           "type": "string",
-          "description": "If probing strongly suggests one of the six authoring patterns, name it here. Otherwise omit.",
+          "description": "If probing strongly suggests one of the four authoring patterns, name it here. Otherwise omit.",
           "enum": [
             "ssh-interactive",
             "ssh-batch",
-            "http-api-basic",
-            "http-api-bearer",
-            "http-api-key",
+            "http-api",
             "http-form-fill"
           ]
         },

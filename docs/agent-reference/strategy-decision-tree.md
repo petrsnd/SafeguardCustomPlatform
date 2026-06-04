@@ -2,13 +2,11 @@
 
 # Strategy decision tree (SSH and HTTP)
 
-Backs the `strategy-selection` skill. Maps `(protocol, vendor docs, probe evidence)` to a recommended authoring pattern from the six covered by the `script-authoring` skill:
+Backs the `strategy-selection` skill. Maps `(protocol, vendor docs, probe evidence)` to a recommended authoring pattern from the four covered by the `script-authoring` skill:
 
 - `ssh-interactive`
 - `ssh-batch`
-- `http-api-basic`
-- `http-api-bearer`
-- `http-api-key`
+- `http-api`
 - `http-form-fill`
 
 Telnet/TN3270 are out of scope for agent skills (see `agent-skills-plan.md` §2). The repository's human-facing telnet material remains under `samples/telnet/` and `docs/`.
@@ -65,18 +63,37 @@ Reference: [`docs/guides/http-platforms.md` § Authentication patterns](../guide
 
 | Probe / vendor evidence | Recommended pattern | Notes |
 | --- | --- | --- |
-| Vendor docs or a `WWW-Authenticate: Basic …` response header indicate the API accepts HTTP Basic on every call. | `http-api-basic` | Use `HttpAuth` with `Type: "Basic"`. See `samples/http/wordpress/` and `templates/Pattern-GenericRestApiBasicAuth.json`. |
-| Vendor docs describe an OAuth2 token endpoint or a login endpoint that returns a token, and subsequent calls send `Authorization: Bearer …`. | `http-api-bearer` | POST to the token endpoint, parse the JSON, set the bearer header on a second request object. See `samples/http/onelogin-jit/` and `templates/Pattern-GenericRestApiBearerToken.json`. |
-| Vendor docs describe a static API key passed in a custom header (e.g., `X-API-Key`, `X-Auth-Token`) rather than `Authorization`. | `http-api-key` | Use `Headers` / `AddHeaders` to attach the key. Pair with [`docs/guides/api-key-management.md`](../guides/api-key-management.md) when the same script must rotate the key. |
+| Vendor docs describe a documented HTTP/REST API for the operations the script must implement, regardless of auth scheme. | `http-api` | Pick auth shape from the sub-table below. See `samples/http/` and templates `Pattern-GenericRestApiBasicAuth.json`, `Pattern-GenericRestApiBearerToken.json`, `Pattern-GenericRestApiKeyRotation.json`. |
 | The target only has an HTML login form (no API), the operator can provide credentials, and operations work by submitting forms. | `http-form-fill` | Use `ExtractFormData` to walk the form, `Request` with `application/x-www-form-urlencoded`, and rely on default cookie persistence. See `samples/http/facebook/` and `samples/http/twitter/`. |
+
+### `http-api` auth shape
+
+Pick a bucket, then a specific scheme. The bucket determines whether the script uses `HttpAuth` or builds the header itself via `Headers`/`AddHeaders`.
+
+| Probe / vendor evidence | Bucket | Scheme | Notes |
+| --- | --- | --- | --- |
+| `WWW-Authenticate: Basic …` response, or vendor docs describe HTTP Basic on every call. | HttpAuth-managed | `Basic` | `HttpAuth` `Type: "Basic"` per request. See `samples/http/wordpress/`. |
+| Vendor docs describe HTTP Digest. | HttpAuth-managed | `Digest` | Same shape as Basic with `Type: "Digest"`. Rare in modern self-hosted products; verify the runtime supports the scheme. |
+| Vendor docs or probe evidence show `Authorization: Bearer …` on operation calls. | Script-managed header | `Bearer` | `Headers.AddHeaders` with `Authorization: Bearer %Token%`. See `samples/http/onelogin-jit/`. |
+| Vendor docs show a custom `Authorization` scheme such as `PVEAPIToken=…` (Proxmox), `Token …`, or other vendor-specific prefix. | Script-managed header | Custom `Authorization` scheme | Same as Bearer but with the vendor's scheme name. Treat as Bearer-shaped for authoring purposes. |
+| Vendor docs describe a static API key passed in a custom header (e.g., `X-API-Key`, `X-Vault-Token`, `X-Auth-Token`). | Script-managed header | Custom-header API key | `Headers.AddHeaders` with the named header. Pair with [`docs/guides/api-key-management.md`](../guides/api-key-management.md) when the same script must rotate the key. |
+
+### `http-api` one-step vs two-step
+
+Orthogonal to the bucket above:
+
+| Probe / vendor evidence | One-step or two-step | Notes |
+| --- | --- | --- |
+| The operator already holds the credential the script presents on every call (long-lived API key, static PAT, root API token). | One-step | Apply auth shape directly on the operation request. |
+| Vendor docs describe a token endpoint that exchanges credentials for a short-lived access token (OAuth2 client_credentials, login + token endpoints). | Two-step | POST to the token endpoint (often HttpAuth-managed `Basic` with client id/secret, sometimes form-encoded), `ExtractJsonObject` to capture the token, then attach via script-managed `Headers` on operation calls. Do **not** reuse the same `RequestObjectName` for token-fetch and operation calls. |
 
 ### HTTP credential intent
 
 | Seed credential kind | Influence on pattern |
 | --- | --- |
-| Password | Likely `http-api-basic` or `http-form-fill`. If the target's login endpoint exchanges a password for a token, that is still `http-api-bearer` shape. |
-| API key | Likely `http-api-key`, unless the API documents a Bearer scheme that happens to accept the key as a token. |
-| Bearer token (operator already holds) | `http-api-bearer`, but consider whether the script should refresh; if not, document the assumption. |
+| Password | Likely `http-api` with HttpAuth-managed `Basic`/`Digest`, or `http-form-fill` if there's no API. If the API documents a token endpoint that exchanges a password for a token, that is `http-api` two-step Bearer. |
+| API key | Likely `http-api` with script-managed-header — the specific scheme depends on whether the vendor uses `Authorization` (Bearer-shaped) or a custom header. Unless the API explicitly accepts the key as a Bearer token, pick by what vendor docs say verbatim. |
+| Bearer token (operator already holds) | `http-api` one-step Bearer. Consider whether the script should refresh; if not, document the assumption. |
 
 ### When to ask vs decide (HTTP)
 

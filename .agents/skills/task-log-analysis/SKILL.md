@@ -92,7 +92,7 @@ Hand the result back to the right skill:
 
 - `connect` failures with host-key / SSL mismatches → re-run probes via [`target-probing`](../target-probing/SKILL.md) to capture the new fingerprint, then update the script.
 - `connect` / `auth` failures with credential issues → confirm the seed credential with the operator before any further appliance call. Do not retry blindly (credential lockout risk; the probe-safety contract in [`target-probing`](../target-probing/SKILL.md) applies even outside probing).
-- `auth` failures with HTTP 401 after a token exchange → revisit [`script-authoring`](../script-authoring/SKILL.md) for `http-api-bearer` token-handling shape; common cause is reusing a single `RequestObjectName` across token-fetch and operation calls.
+- `auth` failures with HTTP 401 after a token exchange → revisit [`script-authoring`](../script-authoring/SKILL.md) for the `http-api` two-step token-handling shape; common cause is reusing a single `RequestObjectName` across token-fetch and operation calls.
 - `parse` failures → revisit `script-authoring`; cross-reference the failing `Receive`/regex against the analogous sample.
 - `operation` failures (target accepted but state did not change) → revisit [`strategy-selection`](../strategy-selection/SKILL.md). The wrong pattern may have been chosen (e.g., interactive `passwd` over batch SSH succeeds visibly but does not actually rotate).
 - `unknown` → stop and ask.

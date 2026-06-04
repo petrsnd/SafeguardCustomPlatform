@@ -1,14 +1,17 @@
 ---
 name: script-authoring
 description: >-
-  Use when drafting or revising the custom-platform JSON itself. Six
-  pattern recipes (ssh-interactive, ssh-batch, http-api-basic,
-  http-api-bearer, http-api-key, http-form-fill) cite schema, samples,
-  and templates and cover Do blocks, status messages, custom parameters,
-  and reserved variables. Mandates the fast inner loop: local schema
-  validation against schema/ before any appliance round-trip. SchemaOnly
-  green is necessary but not sufficient — cross-reference samples for
-  analogous patterns before declaring ready.
+  Use when drafting or revising the custom-platform JSON itself. Four
+  pattern recipes (ssh-interactive, ssh-batch, http-api, http-form-fill)
+  cite schema, samples, and templates and cover Do blocks, status
+  messages, custom parameters, and reserved variables. The http-api
+  recipe spans every auth shape the API documents — Basic/Digest via
+  HttpAuth, or Bearer / custom Authorization scheme / custom-header API
+  key via script-built Headers — plus one-step vs two-step token fetch.
+  Mandates the fast inner loop: local schema validation against schema/
+  before any appliance round-trip. SchemaOnly green is necessary but not
+  sufficient — cross-reference samples for analogous patterns before
+  declaring ready.
 ---
 
 # script-authoring
@@ -19,13 +22,11 @@ Before drafting or revising any platform JSON, consult [`AGENTS.md`](../../../AG
 
 ## Scope
 
-Six pattern sub-recipes cover the supported transports:
+Four pattern sub-recipes cover the supported transports:
 
 - [`ssh-interactive`](#ssh-interactive)
 - [`ssh-batch`](#ssh-batch)
-- [`http-api-basic`](#http-api-basic)
-- [`http-api-bearer`](#http-api-bearer)
-- [`http-api-key`](#http-api-key)
+- [`http-api`](#http-api)
 - [`http-form-fill`](#http-form-fill)
 
 Telnet/TN3270 is out of scope (`agent-skills-plan.md` §2). The recipes below are starting points; pick one based on [`strategy-selection`](../strategy-selection/SKILL.md) output and adapt it.
@@ -63,7 +64,7 @@ A green local schema check proves the JSON parses and conforms to the schema. It
 
 Before declaring a draft "ready to import," cross-reference an analogous sample from `samples-index.md`. If a sample uses a construct your draft does not (e.g., a `Try`/`Catch` around `Disconnect`, a `Receive` flush of the login banner, a `Headers` block before `HttpAuth`), surface that divergence to the operator rather than silently omitting it. The `agent-skills-plan.md` §5 rule is explicit: *"if a sample uses a construct the draft doesn't, surface the divergence."*
 
-## Conventions all six patterns share
+## Conventions all four patterns share
 
 - **Top-level shape.** `Id`, `BackEnd: "Scriptable"`, optional `Meta`, optional `Imports`, then one object per operation (`CheckSystem`, `CheckPassword`, `ChangePassword`, …). Operation objects contain `Parameters` (array of single-key objects) and `Do` (array of command objects). See [`schema/custom-platform-script.schema.json`](../../../schema/custom-platform-script.schema.json) lines 14–80 for the top-level fields, and [`docs/reference/script-structure.md`](../../../docs/reference/script-structure.md) for prose.
 - **Reserved parameters** are not declared by the script — SPP injects them. Custom parameters are declared in `Parameters` and addressed as `%Name%`. See [`docs/reference/reserved-parameters.md`](../../../docs/reference/reserved-parameters.md) and [`docs/reference/custom-parameters.md`](../../../docs/reference/custom-parameters.md).
@@ -144,15 +145,22 @@ Reference: [`docs/guides/ssh-platforms.md`](../../../docs/guides/ssh-platforms.m
 
 Reference: [`docs/guides/ssh-platforms.md`](../../../docs/guides/ssh-platforms.md) ("Batch mode" section), [`docs/reference/commands/execute-command.md`](../../../docs/reference/commands/execute-command.md).
 
-### http-api-basic
+### http-api
 
-**Use when** vendor docs or a `WWW-Authenticate: Basic …` response indicate HTTP Basic on every call.
+**Use when** the target exposes a documented HTTP/REST API and the script presents a credential the operator already holds (token, password, API key, anything else).
 
-**Starter:** [`templates/Pattern-GenericRestApiBasicAuth.json`](../../../templates/Pattern-GenericRestApiBasicAuth.json).
+The script shape is the same regardless of auth scheme: `BaseAddress` → `NewHttpRequest` → (auth setup) → `Request` → `ExtractJsonObject` → `Status`. What varies is two orthogonal choices the recipe makes you spell out: **auth shape** and **one-step vs two-step**.
 
-**Closest production sample:** [`samples/http/wordpress/WordPressHttp.json`](../../../samples/http/wordpress/WordPressHttp.json). The pattern is `BaseAddress` → `NewHttpRequest` → `HttpAuth` → `Request`; verified at lines 33–40 and again at 78–82, 128–132 of that sample.
+#### Auth shape — pick a bucket, then a specific scheme
 
-**Key shapes (verified in the sample):**
+The first decision is *who handles the auth dance*:
+
+| Bucket | What the script does | Auth schemes |
+| --- | --- | --- |
+| **HttpAuth-managed** | Hand SPP a username/password and an auth `Type`; the runtime builds the header. | `Basic`, `Digest` |
+| **Script-managed header** | Build the header value yourself and attach it via `Headers`/`AddHeaders`. | `Authorization: Bearer <token>`, custom `Authorization` schemes (`PVEAPIToken=…`, `Token …`, vendor-specific), custom-header API keys (`X-API-Key`, `X-Vault-Token`, `X-Auth-Token`, …) |
+
+**HttpAuth-managed (Basic, Digest).** Set per-request, not once globally; this matches the existing samples and avoids leaking the service-account credential into requests that should target the managed account.
 
 ```jsonc
 { "HttpAuth": {
@@ -161,49 +169,35 @@ Reference: [`docs/guides/ssh-platforms.md`](../../../docs/guides/ssh-platforms.m
     "Credentials": { "Login": "%FuncUsername%", "Password": "%FuncPassword%" } } }
 ```
 
-Set Basic auth per-request, not once globally. This matches the sample and avoids leaking the service-account credential into requests that should target the managed account.
+Closest production sample for Basic: [`samples/http/wordpress/WordPressHttp.json`](../../../samples/http/wordpress/WordPressHttp.json) (lines 33–40, 78–82, 128–132). Starter template: [`templates/Pattern-GenericRestApiBasicAuth.json`](../../../templates/Pattern-GenericRestApiBasicAuth.json). For Digest the shape is identical with `Type: "Digest"`; clean self-hostable Digest targets are rare in 2025, so verify the runtime supports the scheme against the deployed appliance version before committing.
 
-Reference: [`docs/guides/http-platforms.md`](../../../docs/guides/http-platforms.md), [`docs/reference/commands/http-auth.md`](../../../docs/reference/commands/http-auth.md), [`docs/reference/commands/http-setup.md`](../../../docs/reference/commands/http-setup.md), [`docs/reference/commands/request.md`](../../../docs/reference/commands/request.md).
-
-### http-api-bearer
-
-**Use when** vendor docs describe an OAuth2 / token-exchange endpoint and subsequent calls send `Authorization: Bearer …`.
-
-**Starter:** [`templates/Pattern-GenericRestApiBearerToken.json`](../../../templates/Pattern-GenericRestApiBearerToken.json).
-
-**Closest production sample:** [`samples/http/onelogin-jit/OneLogin_GRC_JIT_addon.json`](../../../samples/http/onelogin-jit/OneLogin_GRC_JIT_addon.json). It interleaves `HttpAuth Basic` (when calling the token endpoint with client credentials, lines 2275–2278) with `Authorization: Bearer %AccessToken%` headers on subsequent calls (lines 1228, 1361, 1510, 1672, 1834, 2002, 2135).
-
-**Key shapes:**
-
-- POST to the token endpoint (often `HttpAuth` `Basic` with client id/secret, sometimes form-encoded body).
-- Parse the response with `ExtractJsonObject` to capture `AccessToken` (or vendor-specific field).
-- Build a fresh `NewHttpRequest` for each subsequent call; attach `Authorization: Bearer %AccessToken%` via the `Headers.AddHeaders` map.
-
-Do not reuse the same `RequestObjectName` for token-fetch and operation calls — Basic auth and Bearer auth have different `HttpAuth`/`Headers` configurations and crossing them is a common source of 401s.
-
-Reference: [`docs/guides/http-platforms.md`](../../../docs/guides/http-platforms.md) ("Bearer/OAuth2" section), [`docs/reference/commands/http-auth.md`](../../../docs/reference/commands/http-auth.md), [`docs/reference/commands/json.md`](../../../docs/reference/commands/json.md).
-
-### http-api-key
-
-**Use when** the API takes a static key in a custom header (e.g., `X-API-Key`, `X-Auth-Token`) instead of `Authorization`.
-
-**Starter:** [`templates/Pattern-GenericRestApiKeyRotation.json`](../../../templates/Pattern-GenericRestApiKeyRotation.json) — also covers the `CheckApiKey` / `ChangeApiKey` operation pair. The custom-header shape lives at lines 184–190 of that file:
+**Script-managed header (Bearer, custom Authorization scheme, custom-header API key).** Use `Headers`/`AddHeaders`, not `HttpAuth`. There is no `HttpAuth` `Type` for arbitrary header shapes.
 
 ```jsonc
 { "Headers": {
-    "RequestObjectName": "CheckApiKeyRequest",
+    "RequestObjectName": "CheckRequest",
     "AddHeaders": {
       "Accept": "application/json",
-      "X-API-Key": "%ApiKey%" } } }
+      "Authorization": "Bearer %AccessToken%" } } }
 ```
 
-**Key shapes:**
+Swap `Authorization: Bearer <token>` for whatever the vendor actually uses. Two common variants:
 
-- Use `Headers` / `AddHeaders` rather than `HttpAuth` — there is no `HttpAuth` type for arbitrary header schemes.
-- Declare the key as `Type: "Secret"` in `Parameters` so SPP redacts it in task logs.
-- For rotation, pair with [`docs/guides/api-key-management.md`](../../../docs/guides/api-key-management.md) — the script must implement `CheckApiKey` + `ChangeApiKey`, and the operations the platform exposes change accordingly.
+- **Bearer or custom `Authorization` scheme** (`Authorization: Bearer <token>`, `Authorization: PVEAPIToken=user@realm!tokenid=UUID`, `Authorization: Token …`). Closest production sample: [`samples/http/onelogin-jit/OneLogin_GRC_JIT_addon.json`](../../../samples/http/onelogin-jit/OneLogin_GRC_JIT_addon.json) (Bearer header at lines 1228, 1361, 1510, 1672, 1834, 2002, 2135). Starter template: [`templates/Pattern-GenericRestApiBearerToken.json`](../../../templates/Pattern-GenericRestApiBearerToken.json).
+- **Custom-header API key** (`X-API-Key: %ApiKey%`, `X-Vault-Token: %Token%`, `X-Auth-Token: …`). See lines 184–190 of [`templates/Pattern-GenericRestApiKeyRotation.json`](../../../templates/Pattern-GenericRestApiKeyRotation.json). That template also covers the `CheckApiKey` / `ChangeApiKey` operation pair for when the script must rotate the key itself; pair with [`docs/guides/api-key-management.md`](../../../docs/guides/api-key-management.md).
 
-Reference: [`docs/guides/api-key-management.md`](../../../docs/guides/api-key-management.md), [`docs/reference/commands/http-setup.md`](../../../docs/reference/commands/http-setup.md).
+Whichever bucket you're in, declare the credential as `Type: "Secret"` in `Parameters` so SPP redacts it in task logs.
+
+#### One-step vs two-step
+
+Orthogonal to the bucket above:
+
+- **One-step** — the operator already holds the credential the script presents on every operation call. HttpAuth-managed shapes are almost always one-step. Script-managed-header shapes are one-step when the credential is a long-lived API key or PAT.
+- **Two-step** — the script POSTs credentials (often HttpAuth-managed `Basic` with client id/secret, sometimes form-encoded) to a token endpoint, parses the response with `ExtractJsonObject` to capture an access token, then attaches that token via script-managed `Headers` on every subsequent operation call. The `samples/http/onelogin-jit/` sample is the canonical example, interleaving `HttpAuth Basic` on the token call (lines 2275–2278) with `Authorization: Bearer %AccessToken%` on the operation calls.
+
+Two-step gotcha: do **not** reuse the same `RequestObjectName` for the token-fetch and the operation calls. The two have different `HttpAuth`/`Headers` configurations and crossing them is a common source of 401s. Build a fresh `NewHttpRequest` for each.
+
+Reference: [`docs/guides/http-platforms.md`](../../../docs/guides/http-platforms.md), [`docs/reference/commands/http-auth.md`](../../../docs/reference/commands/http-auth.md), [`docs/reference/commands/http-setup.md`](../../../docs/reference/commands/http-setup.md), [`docs/reference/commands/request.md`](../../../docs/reference/commands/request.md), [`docs/reference/commands/json.md`](../../../docs/reference/commands/json.md), [`docs/guides/api-key-management.md`](../../../docs/guides/api-key-management.md).
 
 ### http-form-fill
 
