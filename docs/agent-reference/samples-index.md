@@ -42,6 +42,7 @@ CI runs the same script with `-CheckOnly` and fails the build if the committed c
 
 | protocol | auth-scheme | operations | OS-family | file-path | README |
 | --- | --- | --- | --- | --- | --- |
+| — | — | CheckSystem, DiscoverSshHostKey, CheckPassword, ChangePassword | — | [`templates/Pattern-SshBatchShadowCompare.json`](../../templates/Pattern-SshBatchShadowCompare.json) | [README](../../templates/README.md) |
 | http | — | CheckSystem, DiscoverAccounts | — | [`templates/Pattern-GenericHttpAccountDiscovery.json`](../../templates/Pattern-GenericHttpAccountDiscovery.json) | [README](../../templates/README.md) |
 | http | Basic | CheckSystem, ElevateAccount, DemoteAccount | — | [`templates/Pattern-GenericHttpJitElevation.json`](../../templates/Pattern-GenericHttpJitElevation.json) | [README](../../templates/README.md) |
 | http | Basic | CheckSystem, CheckPassword, ChangePassword, DiscoverAccounts | — | [`templates/Pattern-GenericRestApiBasicAuth.json`](../../templates/Pattern-GenericRestApiBasicAuth.json) | [README](../../templates/README.md) |
