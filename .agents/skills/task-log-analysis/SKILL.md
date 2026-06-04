@@ -78,6 +78,8 @@ For each failure, surface to the operator (and to whichever skill is taking the 
 
 Do not paraphrase the messages; quote them verbatim. The catalog below matches on substrings.
 
+**Catch-block masking rule.** When the operation returns a clean verdict (e.g., `PasswordMismatch`, `CheckResult: false`, a sentinel error string) and the log shows a `Try`/`Catch` fired earlier in the operation, the verdict is the catch's fallback value, **not** the target's answer. Read the caught exception text from the inner `Operation` events (typically `Exception evaluating expression …`, `Command X failed with an error …`, or `An error was thrown in the try block …`) before drawing target-side conclusions. Verdict-shaped script bugs are the failure mode this rule guards against.
+
 ## Failure-pattern catalog
 
 The catalog is [`docs/agent-reference/failure-patterns.md`](../../../docs/agent-reference/failure-patterns.md). Per [`agent-skills-plan.md`](../../../agent-skills-plan.md) §5 and §6 Phase F, it **ships empty**. Rows are added only from real extended task logs captured during the maiden voyage and subsequent runs; rows mined from prose guides or invented from memory are explicitly not acceptable.

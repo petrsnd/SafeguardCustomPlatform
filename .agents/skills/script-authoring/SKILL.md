@@ -143,7 +143,30 @@ Reference: [`docs/guides/ssh-platforms.md`](../../../docs/guides/ssh-platforms.m
 
 **Common pitfalls:** assuming PTY-style behavior (interactive `passwd` does not work over batch mode — use `chpasswd` or vendor-specific batch commands); forgetting to check the exit-status buffer.
 
+#### `CheckPassword` on Linux: pass the whole shadow line to `CompareShadowHash`
+
+The authoritative pattern (matches the Hercules `LinuxSshFunctions.json` import that ships with the appliance) is in [`samples/ssh/generic-linux/GenericLinux.json`](../../../samples/ssh/generic-linux/GenericLinux.json) lines 220–245:
+
+1. `ExecuteCommand`: `sudo -S /usr/bin/getent shadow %AccountUserName%` (batch mode has no PTY, so `-S` is required).
+2. Capture the whole stdout buffer into `%AccountEntry%`.
+3. `CompareShadowHash` with `SaltedHash: "%AccountEntry%"` — **pass the whole shadow line, not a pre-extracted field**. The component handler splits on `:` and pulls field[1] internally (verified in Hercules `Source/Hercules.WebService/Common/Crypt/PasswordHash.cs` `CheckPasswordAgainstShadowEntry`).
+4. `Condition` on `PasswordHashMatched == true` → `Return true`; else `Return false`.
+5. Wrap the whole sequence in `Try`/`Catch`; the `Catch` is the **fallback** for environments where `getent` is unavailable (locked-down sudo, no shadow read), not a hash-format workaround.
+
+**Do not pre-split the shadow line in a `SetItem` expression** (`ShadowLine.Split(':')[1]`). Two compounding reasons:
+
+- It is unnecessary — `CompareShadowHash` does the split itself.
+- It triggers a Z.Expressions overload-ambiguity error on `string.Split(char)` (catalogued in [`docs/agent-reference/failure-patterns.md`](../../../docs/agent-reference/failure-patterns.md)), and the resulting `Try`/`Catch` fallback emits a sentinel verdict that looks like a target-state mismatch but is really a script bug.
+
+`CompareShadowHash` understands yescrypt (`$y$j9T$…`, default on Ubuntu 22.04+ / Debian 12+), bcrypt, SHA-512, SHA-256, MD5, and AIX SSHA. There is no hash-format reason to abandon it for an auth-by-login primary; auth-by-login is the documented `Catch` fallback only.
+
 Reference: [`docs/guides/ssh-platforms.md`](../../../docs/guides/ssh-platforms.md) ("Batch mode" section), [`docs/reference/commands/execute-command.md`](../../../docs/reference/commands/execute-command.md).
+
+#### Catch blocks must log before falling back
+
+Any `Try`/`Catch` whose `Catch` produces a verdict (rather than re-raising) **must log the caught exception** via `WriteResponseObject` (or a `Status` message that includes the exception text) before emitting the fallback value. Otherwise the next agent reads a clean verdict — `PasswordMismatch`, `false`, `Error` — and attributes it to target state when the actual cause was a script-side bug the catch swallowed.
+
+This rule was paid for during Phase 5 by an iteration that returned a yescrypt "mismatch" that was actually a Z.Expressions overload error in a pre-split `SetItem`. The visible error message *did* carry the truth, but only because the catch happened to emit the inner exception in its `Status` message — most catch blocks in the wild do not.
 
 ### http-api
 
