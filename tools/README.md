@@ -373,7 +373,7 @@ Connect-Safeguard -Appliance 192.168.117.15 -Insecure -Browser
 ### Versions verified
 
 * PowerShell 7.6.2
-* `safeguard-ps` 8.4.1.99999
+* `safeguard-ps` 8.4.3 (minimum — enforced at script start; earlier versions lack `-ExtendedLogging` on `Invoke-SafeguardAssetSshHostKeyDiscovery`)
 * SPP appliance reachable at the time of authoring (Phase 2 of agent-skills
   initiative; see `agent-skills-plan.md`).
 

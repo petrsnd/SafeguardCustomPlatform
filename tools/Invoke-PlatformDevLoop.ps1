@@ -141,6 +141,20 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+# ---- minimum module version ------------------------------------------------
+# safeguard-ps 8.4.3 added -ExtendedLogging to Invoke-SafeguardAssetSshHostKeyDiscovery,
+# which the new-platform workflow relies on to capture a persistent task log when
+# host-key discovery fails (see docs/agent-reference/failure-patterns.md). Earlier
+# versions emit only the surface 60307 error with no task log.
+$script:MinSafeguardPsVersion = [Version]'8.4.3'
+$installedVersions = @(Get-Module -ListAvailable -Name safeguard-ps |
+    Sort-Object Version -Descending |
+    Select-Object -ExpandProperty Version)
+if (-not $installedVersions -or $installedVersions[0] -lt $script:MinSafeguardPsVersion) {
+    $have = if ($installedVersions) { $installedVersions[0] } else { '<not installed>' }
+    throw "Invoke-PlatformDevLoop.ps1 requires safeguard-ps >= $($script:MinSafeguardPsVersion); found $have. Run: Install-Module safeguard-ps -Scope CurrentUser -Force"
+}
+
 # ---- helpers ---------------------------------------------------------------
 
 function Write-StatusLine {
@@ -182,7 +196,7 @@ function Get-TaskIdFromInformationMessages {
     # or fails:
     #     "See extended logs: Get-SafeguardTaskLog <GUID>"
     # Source: safeguard-ps Wait-LongRunningTask (the two extendedLogging
-    # branches that emit "See extended logs:"); verified against v8.4.1.
+    # branches that emit "See extended logs:"); verified against v8.4.3.
     # The GUID is not exposed on the cmdlet's return value (which is a
     # human-readable multi-line string), so capturing Information messages and
     # regex-matching this line is the grounded extraction path.

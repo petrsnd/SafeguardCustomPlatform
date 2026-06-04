@@ -55,16 +55,20 @@ Two examples from the Phase 5 maiden voyage that one `Get-Help` call apiece woul
 
 ### Module presence: check, don't ask
 
-Before invoking any cmdlet, verify `safeguard-ps` is installed:
+Before invoking any cmdlet, verify `safeguard-ps` is installed **and at least version 8.4.3**:
 
 ```powershell
-Get-Module -ListAvailable -Name safeguard-ps
+Get-Module -ListAvailable -Name safeguard-ps |
+  Sort-Object Version -Descending |
+  Select-Object -First 1 -ExpandProperty Version
 ```
 
-If the module is not present, ask the operator **once** for permission to install:
+8.4.3 is the floor because earlier versions lack `-ExtendedLogging` on `Invoke-SafeguardAssetSshHostKeyDiscovery` — without it, host-key-discovery failures emit only the surface 60307 error and persist no task log, leaving the agent with nothing to diagnose. `tools/Invoke-PlatformDevLoop.ps1` enforces this floor at startup and refuses to run against older modules.
+
+If the module is missing or below 8.4.3, ask the operator **once** for permission to install or upgrade:
 
 ```powershell
-Install-Module -Name safeguard-ps -Scope CurrentUser
+Install-Module -Name safeguard-ps -Scope CurrentUser -Force
 ```
 
 Latest stable from PowerShell Gallery is the default. Do not ask "is `safeguard-ps` available" or "which version do you have" first — check, then proceed or ask once.
