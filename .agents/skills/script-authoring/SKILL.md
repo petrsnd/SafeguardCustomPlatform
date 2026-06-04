@@ -111,6 +111,10 @@ If a sample's call site uses 3 args and another uses 4, that is a real signal: e
 
 ## Pattern recipes
 
+### SSH operations checklist (applies to both ssh-interactive and ssh-batch)
+
+Every SSH platform meant for asset onboarding **must** include a `DiscoverSshHostKey` operation. The appliance classifies a platform as SSH-capable by inspecting its operation set (Hercules runtime check, not the schema) and refuses host-key flows on platforms that lack it — surfaces as `60306: Platform does not support SSH authentication` from `New-SafeguardCustomPlatformAsset`. Copy the shape from [`samples/ssh/generic-linux/GenericLinux.json`](../../../samples/ssh/generic-linux/GenericLinux.json); do not set `SoftwareVersionVariableName` on the command (no on-disk sample does, and the runtime silently fails on it via 60307).
+
 ### ssh-interactive
 
 **Use when** the target presents a shell prompt, banner, or appliance CLI; password change goes through interactive prompts (`passwd`); sudo may prompt.
