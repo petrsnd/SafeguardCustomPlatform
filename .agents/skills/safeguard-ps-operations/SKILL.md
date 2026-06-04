@@ -47,7 +47,7 @@ Get-Help <Cmdlet> -Full | Out-String -Width 200
 
 `Out-String -Width 200` matters: in narrow shells the parameter table wraps and `Required?` / `Position?` columns shift, making it easy to misread a switch as a valued parameter. Pin the width.
 
-If a cmdlet's parameter is a `[switch]` and the value comes from a variable or property, use the colon form (`-Insecure:$s.Insecure`, not `-Insecure $s.Insecure`). PowerShell silently swallows the latter on switches and the cmdlet ends up with the parameter's default — usually `$false` — which is rarely what the agent wanted.
+If a cmdlet's parameter is a `[switch]` and the value comes from a variable, use the colon form (`-Insecure:$ins`, not `-Insecure $ins`). PowerShell silently swallows the latter on switches and the cmdlet ends up with the parameter's default — usually `$false` — which is rarely what the agent wanted. The value bound to the colon must be a `[bool]`.
 
 Two examples from the Phase 5 maiden voyage that one `Get-Help` call apiece would have prevented: assuming `New-SafeguardCustomPlatform` needed a separate `Import-` step (it accepts `-ScriptFile` directly), and not knowing `Get-SafeguardTaskLog` returns a flat array of GUID strings with no arguments and the actual `{Recorded, Level, Event}` records only with `-TaskId <guid>`.
 
@@ -102,14 +102,15 @@ $Global:SafeguardSession |
   Set-Content "$env:USERPROFILE\.copilot\session-state\<id>\files\sg-session.json" -Encoding utf8
 ```
 
-**Step 2 — every subsequent cmdlet is its own fresh sync call.** Re-hydrate the saved session and pass `Appliance`, `AccessToken`, and `Insecure` straight off it. `Insecure` is a switch parameter, so it takes the colon-form `-Insecure:$s.Insecure` when the value comes from a property:
+**Step 2 — every subsequent cmdlet is its own fresh sync call.** Re-hydrate the saved session, normalize `Insecure` to a `[bool]` once, then thread `Appliance`, `AccessToken`, and the bool through every call:
 
 ```
 $s = Get-Content "<session-state>\sg-session.json" | ConvertFrom-Json
-Get-SafeguardCustomPlatform -Appliance $s.Appliance -Insecure:$s.Insecure -AccessToken $s.AccessToken <name>
-Invoke-SafeguardAssetAccountPasswordChange -Appliance $s.Appliance -Insecure:$s.Insecure -AccessToken $s.AccessToken `
+$ins = [bool]$s.Insecure.IsPresent   # required: $s.Insecure does not bind to -Insecure directly after JSON roundtrip
+Get-SafeguardCustomPlatform -Appliance $s.Appliance -Insecure:$ins -AccessToken $s.AccessToken <name>
+Invoke-SafeguardAssetAccountPasswordChange -Appliance $s.Appliance -Insecure:$ins -AccessToken $s.AccessToken `
   -AssetToUse <id> -AccountToUse <id> -ExtendedLogging
-Get-SafeguardTaskLog -Appliance $s.Appliance -Insecure:$s.Insecure -AccessToken $s.AccessToken -TaskId <guid>
+Get-SafeguardTaskLog -Appliance $s.Appliance -Insecure:$ins -AccessToken $s.AccessToken -TaskId <guid>
 ```
 
 Every safeguard-ps cmdlet that takes `-Appliance` also accepts `-AccessToken`. Threading those three through every call eliminates the dependency on `$Global:SafeguardSession` entirely — output returns cleanly via stdout, no PSReadLine wedging, no confirmation prompts swallowing inputs. Pulling `Insecure` from the session (rather than hardcoding `-Insecure`) keeps the agent honest: if the operator connected with a valid cert, the saved value is `$false` and every call validates.
