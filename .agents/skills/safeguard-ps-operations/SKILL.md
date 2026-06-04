@@ -39,14 +39,17 @@ It is the **only** skill that directly calls `safeguard-ps`. Other skills reques
 
 Every cmdlet, parameter name, and parameter-set described to the operator MUST come from `Get-Help <Cmdlet> -Full` against the **installed** `safeguard-ps` module. Do not paraphrase from memory, vendor docs, or prior conversations.
 
-When the agent does not already have `Get-Help` output for a cmdlet it is about to call, it asks the operator to run, e.g.:
+Before invoking any cmdlet you have not used in the current voyage, the agent runs `Get-Help` itself — do not ask the operator to run it and paste output back:
 
 ```powershell
-Get-Help Import-SafeguardCustomPlatformScript -Full
-Get-Help Test-SafeguardAssetAccountPassword   -Full
+Get-Help <Cmdlet> -Full | Out-String -Width 200
 ```
 
-and pastes the output back. Use that output as the source of truth.
+`Out-String -Width 200` matters: in narrow shells the parameter table wraps and `Required?` / `Position?` columns shift, making it easy to misread a switch as a valued parameter. Pin the width.
+
+If a cmdlet's parameter is a `[switch]` and the value comes from a variable or property, use the colon form (`-Insecure:$s.Insecure`, not `-Insecure $s.Insecure`). PowerShell silently swallows the latter on switches and the cmdlet ends up with the parameter's default — usually `$false` — which is rarely what the agent wanted.
+
+Two examples from the Phase 5 maiden voyage that one `Get-Help` call apiece would have prevented: assuming `New-SafeguardCustomPlatform` needed a separate `Import-` step (it accepts `-ScriptFile` directly), and not knowing `Get-SafeguardTaskLog` returns a flat array of GUID strings with no arguments and the actual `{Recorded, Level, Event}` records only with `-TaskId <guid>`.
 
 ## Authentication
 

@@ -44,6 +44,15 @@ Two layers of evidence matter:
 
 Read both. The `Operation` log shows what the platform script intended; `SshCommunication` (when present) shows the raw frames so a `Send`/`Receive` mismatch becomes diagnosable.
 
+### Fetching a task log directly: `Get-SafeguardTaskLog` parameter shape
+
+Two non-obvious facts about the cmdlet that cost a round trip on the maiden voyage:
+
+- **No-args vs `-TaskId` return entirely different shapes.** With no arguments, `Get-SafeguardTaskLog` returns a flat array of recent task-ID GUID strings across **all** tasks the session can see — a discovery call, not a log-fetching call. With `-TaskId <guid>` it returns the actual `{Recorded, Level, Event}` records for that task.
+- **Section headers come through with empty `Level`.** The synthetic `--- <logName> ---` separator entries SPP inserts between named logs (`Operation`, `SshCommunication`) carry empty `Level`. Treat any record whose `Level` is empty as a section delimiter, not as a real log event, and use it to know which named log the surrounding records belong to.
+
+When the operator only has an asset/account and no task GUID, do not enumerate every recent task ID and parse JSON looking for the account name — ask the operator to re-trigger with `-ExtendedLogging`. The trigger output emits the new GUID directly.
+
 ## Classification flow
 
 | Phase | What it means | Where it shows up |

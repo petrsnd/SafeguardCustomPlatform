@@ -86,6 +86,16 @@ Concrete rules for any `Send`/`ExecuteCommand` block whose output is parsed:
 - **Terminate `Send` buffers with `\n`.** A PTY shell will not execute a typed line until it sees a newline. A `Send` without `\n` causes the next `Receive` to time out (or match echo) — a silent class of bug that costs an entire iteration to diagnose.
 - **Echo the parsed buffer back** via `WriteResponseObject` (or the equivalent diagnostic command) so it lands in the task log. Without this, parse-condition failures in `Condition` blocks produce a `Returning false` with no visible reason — another wasted iteration.
 
+### When two iterations fail with the same signature, stop drafting and grep
+
+If iteration N+1 fails with the same classified phase and substantively the same signature as iteration N (same `Status` enum value, same parse failure in the same `Receive`, same regex that did not fire), switch from drafting to sample-mining:
+
+1. Run `grep -rn "<construct>" samples/<protocol>/` for the construct that is failing — `passwd`, `chpasswd`, `Bearer`, `HttpAuth`, `ExtractJsonObject` against a similar response shape, etc.
+2. **Read the matching sample's full operation in context**, not just the line that grep returned. The shape around the line — what `Receive` precedes it, which buffer is marked `ContainsSecret`, whether the surrounding command has quotes — is usually what makes the sample work.
+3. Port the working shape into the draft as a single change. Trigger. If the new failure is in a different phase, the port worked; iterate from there.
+
+This rule was paid for in blood during the Phase 5 maiden voyage: three back-to-back `printf | sudo -S chpasswd` ChangePassword iterations from first principles, when one `grep -rn "passwd" samples/ssh/` would have surfaced [`samples/ssh/generic-linux/GenericLinux.json`](../../../samples/ssh/generic-linux/GenericLinux.json) lines 281–340 — the proven prompt-driven `sudo passwd <user>` pattern with `Condition`-gated `Send` blocks for each prompt — on iteration 2.
+
 ### Function-call signatures: copy from samples, do not infer
 
 When emitting a `Function` call — whether to a locally-defined function, an imported library function, or anything else with a name and `Parameters` array — the agent **must** find at least one working call site for that function in `samples/` and copy the `Parameters` array shape verbatim.

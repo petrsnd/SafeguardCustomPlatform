@@ -80,6 +80,16 @@ When asking, give the operator something to act on rather than just the negative
 
 This rule complements `AGENTS.md` *Question discipline*: the default posture is still act-then-ask, but a missing prerequisite is an immediate blocker, not a question deferred to the end of the playbook.
 
+## Probe shell hygiene (mandatory for every probe)
+
+Probes run non-interactively under the agent. A probe that works fine for a human can wedge or silently drop diagnostic output here. Round trips are paid in operator time, so each probe must return a complete, parseable result on the first try.
+
+- **Capture stderr explicitly with `2>&1`.** Auth errors, permission denied, "command not found", DNS failures land on stderr; a probe that captures only stdout reports "no output" for a command that actually failed. Never bare stdout-only; never `2>/dev/null`.
+- **Disable interactive prompts up front.** Add `-o BatchMode=yes` to every `ssh` (refuses to ask for a password — fail fast instead of hanging). The prompt probe also wants `-o StrictHostKeyChecking=accept-new` so a brand-new host key is accepted once but a *changed* key still aborts.
+- **Cap every probe with a hard timeout.** `ssh -o ConnectTimeout=10`; for commands run on the target via a working ssh, prefix with `timeout 10`. For curl: `--max-time 15 --connect-timeout 5`. A wedged probe is worse than a failed one — a failure at least returns a signal.
+- **For HTTP probes,** add `--fail-with-body` and `-w '%{http_code}\n'` so the response code lands next to the body. A 401 with no body is a useful signal; a hung curl is a wasted round trip.
+- **If a probe surfaces a prompt the playbook did not plan for, kill it and re-run with the suppressing flag** (`-o BatchMode=yes`, `sudo -n`, `-o StrictHostKeyChecking=accept-new`). Do not write to it. Interacting with an unplanned prompt is how a read-only probe accidentally becomes destructive.
+
 ## SSH playbook
 
 Categories the playbook covers, all `read-only` by default. Each maps to a `probeRecord.category` value (schema line 156–167) and contributes to `sshFindings` (schema lines 206–231).
