@@ -174,6 +174,14 @@ Every trigger cmdlet must pass `-ExtendedLogging`. The `See extended logs: Get-S
 
 If the operator triggered an operation without `-ExtendedLogging`, the task ID cannot be reliably recovered; ask them to re-trigger.
 
+## Cmdlet quirks
+
+Three small gotchas that each cost an iteration on first encounter:
+
+- **`-TaskId` requires a `[guid]` cast.** `Get-SafeguardTaskLog -TaskId "<id-string>"` rejects a bare string. Cast at the call site: `Get-SafeguardTaskLog -TaskId ([guid]$id)`.
+- **Task-log GUID lists are lexicographic, not chronological.** v1 GUIDs from the appliance are not time-ordered; sorting and taking the "last" item finds the wrong task. To identify the task a trigger just produced, **diff** the GUID set before and after the trigger and pick the new entry.
+- **`SshCommunication` sub-log is empty for non-script-engine paths.** Built-in operations such as host-key discovery (`Invoke-SafeguardAssetSshHostKeyDiscovery`) run through a different runtime than scripted custom-platform operations; an empty `SshCommunication` array on those tasks is normal, not a failure signal. Read the `Operation` log for those.
+
 ## Use `Invoke-PlatformDevLoop.ps1` instead of re-implementing the loop
 
 The standard validate → import → trigger → log path is implemented once, in [`tools/Invoke-PlatformDevLoop.ps1`](../../../tools/Invoke-PlatformDevLoop.ps1). This skill calls that script rather than chaining cmdlets in prose.
