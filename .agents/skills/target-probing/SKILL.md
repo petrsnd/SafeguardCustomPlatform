@@ -95,6 +95,22 @@ Probes run non-interactively under the agent. A probe that works fine for a huma
 
 Categories the playbook covers, all `read-only` by default. Each maps to a `probeRecord.category` value (schema line 156–167) and contributes to `sshFindings` (schema lines 206–231).
 
+### SSH client: Python paramiko
+
+Paramiko is the default SSH probe client on every operator host. One path, not a per-OS matrix:
+
+- Cross-platform; Python is already on the agent's tool belt.
+- Returns clean `(stdout, stderr, exit_code)` without PTY allocation.
+- Accepts the credential as a Python variable, never as a process argument (so the secret stays out of `ps`/argv/shell history). Substitute a placeholder in `probeRecord.command` regardless.
+- Works for both key-based and password auth via the same API.
+
+Install once with `pip install paramiko` if missing.
+
+Two SSH-client traps to avoid:
+
+- **Native `ssh` cannot pass a password non-interactively** — it prompts, and `-o BatchMode=yes` refuses password auth outright. Use native `ssh` only for key-based auth, or skip it and use paramiko.
+- **Banned: `wsl sshpass …` chained from PowerShell.** Cross-shell I/O between WSL and the parent PowerShell wedges silently — the command produces no output and never returns. If WSL is the right environment for some reason, run from inside a WSL shell, not PowerShell calling into WSL.
+
 ### `prompt` — what does the shell look like?
 
 `ssh -o StrictHostKeyChecking=accept-new <user>@<host>` and observe:
