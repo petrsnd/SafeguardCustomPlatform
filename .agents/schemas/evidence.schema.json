@@ -8,7 +8,7 @@
     "schemaVersion",
     "protocol",
     "target",
-    "seed",
+    "serviceAccount",
     "probeRun"
   ],
   "additionalProperties": false,
@@ -43,9 +43,9 @@
         }
       }
     },
-    "seed": {
+    "serviceAccount": {
       "type": "object",
-      "description": "Seed credential identification used by probes. Secrets MUST NOT appear here — name only.",
+      "description": "Service-account identification used by probes to authenticate to the target. Secrets MUST NOT appear here — name and credential kind only.",
       "required": ["accountName"],
       "additionalProperties": false,
       "properties": {
@@ -55,7 +55,7 @@
         },
         "credentialKind": {
           "type": "string",
-          "description": "What kind of secret the seed uses. Sourced from operator declaration; not inferred.",
+          "description": "What kind of credential the service account uses. Sourced from operator declaration; not inferred.",
           "enum": ["password", "ssh-key", "api-key", "bearer-token", "unknown"]
         }
       }

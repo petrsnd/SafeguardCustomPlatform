@@ -19,7 +19,7 @@ This table is built from the following repo files. When in doubt, read the sourc
 | --- | --- |
 | [`docs/guides/ssh-platforms.md`](../guides/ssh-platforms.md) | Authoritative on the SSH interactive-vs-batch decision and the connection/login patterns. |
 | [`docs/guides/http-platforms.md`](../guides/http-platforms.md) | Authoritative on HTTP authentication patterns: Basic, Bearer/OAuth2, API keys in headers, cookie/form-fill. |
-| [`docs/guides/ssh-key-management.md`](../guides/ssh-key-management.md) | Disambiguates password vs SSH-key flows when the seed credential is a key. |
+| [`docs/guides/ssh-key-management.md`](../guides/ssh-key-management.md) | Disambiguates password vs SSH-key flows when the service-account credential is a key. |
 | [`docs/guides/api-key-management.md`](../guides/api-key-management.md) | Disambiguates password vs API-key flows on HTTP targets. |
 | [`docs/guides/jit-elevation.md`](../guides/jit-elevation.md) | Operation-shape guidance when the target supports Elevate/Demote rather than (or in addition to) password rotation. |
 | [`docs/guides/account-discovery.md`](../guides/account-discovery.md) | Operation-shape guidance when discovery is required. |
@@ -46,7 +46,7 @@ Reference: [`docs/guides/ssh-platforms.md` § Choosing an SSH pattern](../guides
 
 ### SSH credential intent
 
-| Seed credential kind (declared by operator) | Influence on pattern |
+| Service-account credential kind (declared by operator) | Influence on pattern |
 | --- | --- |
 | Password | Either `ssh-interactive` or `ssh-batch` is fine; choose by prompt behavior above. |
 | SSH key | Pass `UserKey` on `Connect`. Often pairs with `ssh-batch`. See `samples/ssh/restricted-authorized-key/` and [`docs/guides/ssh-key-management.md`](../guides/ssh-key-management.md). |
@@ -89,7 +89,7 @@ Orthogonal to the bucket above:
 
 ### HTTP credential intent
 
-| Seed credential kind | Influence on pattern |
+| Service-account credential kind | Influence on pattern |
 | --- | --- |
 | Password | Likely `http-api` with HttpAuth-managed `Basic`/`Digest`, or `http-form-fill` if there's no API. If the API documents a token endpoint that exchanges a password for a token, that is `http-api` two-step Bearer. |
 | API key | Likely `http-api` with script-managed-header — the specific scheme depends on whether the vendor uses `Authorization` (Bearer-shaped) or a custom header. Unless the API explicitly accepts the key as a Bearer token, pick by what vendor docs say verbatim. |

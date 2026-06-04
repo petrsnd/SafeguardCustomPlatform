@@ -3,12 +3,13 @@ name: safeguard-ps-operations
 description: >-
   Use when the agent must drive a live SPP appliance through safeguard-ps
   to validate, import, trigger, and inspect a custom platform script.
-  Covers Connect-Safeguard -Browser auth, the cmdlet menu
-  (Test- / Import- / Export- / asset / account / trigger), idempotency,
-  extended-logging triggers, task-log JSON retrieval, and how to call
-  tools/Invoke-PlatformDevLoop.ps1 instead of re-implementing the loop.
-  All cmdlet syntax must be sourced from Get-Help <Cmdlet> -Full against
-  the installed module, never paraphrased from memory.
+  Covers Connect-Safeguard -DeviceCode (preferred) / -Browser (fallback)
+  auth, the cmdlet menu (Test- / Import- / Export- / asset / account /
+  trigger), idempotency, extended-logging triggers, task-log JSON
+  retrieval, and how to call tools/Invoke-PlatformDevLoop.ps1 instead of
+  re-implementing the loop. All cmdlet syntax must be sourced from
+  Get-Help <Cmdlet> -Full against the installed module, never paraphrased
+  from memory.
 ---
 
 # safeguard-ps-operations
@@ -53,6 +54,18 @@ Two examples from the Phase 5 maiden voyage that one `Get-Help` call apiece woul
 
 ## Authentication
 
+### PowerShell version: prefer 7+, warn and continue otherwise
+
+safeguard-ps targets PS 7. Several cmdlets behave better there (cleaner error records, no Windows-PowerShell-only quirks). Before calling any cmdlet:
+
+```powershell
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Warning "Running on PowerShell $($PSVersionTable.PSVersion). PowerShell 7+ is recommended for safeguard-ps; continuing anyway."
+}
+```
+
+Do not block on the version. If only PS 5.1 is available, the agent emits the warning once and proceeds.
+
 ### Module presence: check, don't ask
 
 Before invoking any cmdlet, verify `safeguard-ps` is installed **and at least version 8.4.3**:
@@ -73,25 +86,27 @@ Install-Module -Name safeguard-ps -Scope CurrentUser -Force
 
 Latest stable from PowerShell Gallery is the default. Do not ask "is `safeguard-ps` available" or "which version do you have" first — check, then proceed or ask once.
 
-### Connect: try secure, fall back on error
+### Connect: prefer `-DeviceCode`, fall back to `-Browser`, then `-Insecure` on TLS error
 
-Connect with `-Browser` (PKCE) only. No password-in-script recipes; no `-Username`/`-Password` parameters in agent flows. Try the **secure** form first:
+Connect with PKCE only — no password-in-script recipes; no `-Username`/`-Password` parameters in agent flows. Prefer **`-DeviceCode`**: it prints a verification URL and short code instead of launching a local browser, which is the lower-friction default for terminal sessions and works in headless / SSH / CI contexts. Fall back to `-Browser` only if the appliance does not have the Device Code grant enabled (firmware < 7.4 or grant disabled in Appliance Management):
 
 ```powershell
+Connect-Safeguard -Appliance <host> -DeviceCode
+# or, if Device Code is not enabled on this appliance:
 Connect-Safeguard -Appliance <host> -Browser
 ```
 
-`Connect-Safeguard -Browser` blocks until the PKCE callback completes; await its own success/failure rather than asking the operator "are you logged in yet?". On a TLS/cert error (self-signed cert, mismatched CN — common on lab appliances), ask **once** for permission to retry with `-Insecure`:
+Both forms block until the PKCE callback completes; await the cmdlet's own success/failure rather than asking the operator "are you logged in yet?". On a TLS/cert error (self-signed cert, mismatched CN — common on lab appliances), ask **once** for permission to retry with `-Insecure`:
 
 ```powershell
-Connect-Safeguard -Appliance <host> -Insecure -Browser
+Connect-Safeguard -Appliance <host> -Insecure -DeviceCode
 ```
 
 Do not pre-ask whether the appliance has a valid certificate. Try secure; the error message tells both the operator and the agent unambiguously when `-Insecure` is needed.
 
 ### Persist the session across iterations — serialize the token, never keep a long-running shell
 
-**Login budget = 1 per voyage.** Each `Connect-Safeguard -Browser` costs the operator real time and attention. Connect exactly once.
+**Login budget = 1 per voyage.** Each `Connect-Safeguard -DeviceCode` (or `-Browser`) costs the operator real time and attention. Connect exactly once.
 
 **Long-running interactive PowerShell sessions are banned in agent flows.** They wedge on PSReadLine prediction, swallow `$ConfirmPreference` prompts, return stale back-buffer through `read_powershell`, and routinely cost a re-login when the agent has to kill them. Do not start a persistent shell to hold `$Global:SafeguardSession`. Do not invoke `Connect-Safeguard` as an async command kept alive across iterations.
 
@@ -100,7 +115,7 @@ The only correct shape is short-lived sync `powershell -Command { ... }` calls. 
 **Step 1 — connect once and serialize.** Sync call; the shell exits when `Connect-Safeguard` returns (no `-NoExit`, no async):
 
 ```
-Connect-Safeguard -Appliance <host> -Insecure -Browser | Out-Null
+Connect-Safeguard -Appliance <host> -Insecure -DeviceCode | Out-Null
 $Global:SafeguardSession |
   ConvertTo-Json -Depth 5 |
   Set-Content "$env:USERPROFILE\.copilot\session-state\<id>\files\sg-session.json" -Encoding utf8
@@ -140,7 +155,7 @@ The cmdlets this skill calls, all sourced from `Get-Help`. The shapes below are 
 
 | Cmdlet | Purpose | Used by |
 | --- | --- | --- |
-| `Connect-Safeguard -Browser` | PKCE login. Caches `$Global:SafeguardSession`. | Skill bootstrap. |
+| `Connect-Safeguard -DeviceCode` (or `-Browser`) | PKCE login. Caches `$Global:SafeguardSession`. `-DeviceCode` prints a verification URL and short code; `-Browser` launches a local browser. | Skill bootstrap. |
 | `Test-SafeguardCustomPlatformScript` | Server-side dry-run of a script. POSTs to `Core/Platforms/ValidateScript/Raw`; returns the platform-preview object the script would produce. | `Invoke-PlatformDevLoop.ps1` validate phase. |
 | `Import-SafeguardCustomPlatformScript` | PUTs the script to `Core/Platforms/{Id}/Script/Raw`, then re-reads the platform via `Get-SafeguardCustomPlatform`. | `Invoke-PlatformDevLoop.ps1` import phase. |
 | `Export-SafeguardCustomPlatformScript` | Pulls the deployed JSON back. **Source of truth for the enhance-platform workflow** — on-disk samples are starting points and may have drifted. | Manual call before authoring an enhancement. |

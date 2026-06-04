@@ -94,7 +94,7 @@ Override path to the JSON Schema. Defaults to
 
 .PARAMETER Appliance
 Pass-through for safeguard-ps cmdlets. Usually unset; the cached
-$Global:SafeguardSession from Connect-Safeguard -Browser is used instead.
+$Global:SafeguardSession from Connect-Safeguard -DeviceCode (or -Browser) is used instead.
 
 .PARAMETER AccessToken
 Pass-through bearer token for safeguard-ps cmdlets. Usually unset.
@@ -140,6 +140,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+# ---- PowerShell version preference ----------------------------------------
+# safeguard-ps targets PS 7. Several cmdlets emit cleaner error records there
+# and avoid Windows-PowerShell-only quirks. Warn (don't block) on PS 5.1.
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Warning "Running on PowerShell $($PSVersionTable.PSVersion). PowerShell 7+ is recommended for safeguard-ps; continuing anyway."
+}
 
 # ---- minimum module version ------------------------------------------------
 # safeguard-ps 8.4.3 added -ExtendedLogging to Invoke-SafeguardAssetSshHostKeyDiscovery,
@@ -251,7 +258,7 @@ $needsPlatform  = $mode -in @('NoTrigger','FullLoop')
 $needsTrigger   = $mode -eq 'FullLoop'
 
 if ($needsAppliance -and -not (Test-ApplianceConnection -Token $AccessToken)) {
-    throw "Mode '$mode' requires an active Safeguard session. Run Connect-Safeguard -Browser first, or pass -AccessToken."
+    throw "Mode '$mode' requires an active Safeguard session. Run Connect-Safeguard -DeviceCode (or -Browser) first, or pass -AccessToken."
 }
 if ($needsPlatform -and -not $PlatformToEdit) {
     throw "Mode '$mode' requires -PlatformToEdit (custom platform name or ID)."

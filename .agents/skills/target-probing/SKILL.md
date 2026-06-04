@@ -4,9 +4,9 @@ description: >-
   Use when the agent must learn how a live target system actually behaves
   before authoring or revising a custom platform script. Covers per-protocol
   recon recipes (SSH and HTTP) run from the operator's local shell with a
-  seed credential, the probe-safety contract (read-only by default,
-  per-probe consent for destructive probes, rate limits, no-production
-  guard), and the structured evidence artifact consumed by
+  service-account credential, the probe-safety contract (read-only by
+  default, per-probe consent for destructive probes, rate limits,
+  no-production guard), and the structured evidence artifact consumed by
   strategy-selection and script-authoring.
 ---
 
@@ -18,7 +18,7 @@ Before running any probe, consult [`AGENTS.md`](../../../AGENTS.md) for the acti
 
 ## Scope
 
-Local-shell recon recipes against a live target with a seed credential. SSH and HTTP only — telnet/TN3270 is out of scope (`agent-skills-plan.md` §2). Probing produces a structured **evidence artifact** that conforms to [`.agents/schemas/evidence.schema.json`](../../../.agents/schemas/evidence.schema.json) and is consumed by [`strategy-selection`](../strategy-selection/SKILL.md) and [`script-authoring`](../script-authoring/SKILL.md).
+Local-shell recon recipes against a live target with a service-account credential. SSH and HTTP only — telnet/TN3270 is out of scope (`agent-skills-plan.md` §2). Probing produces a structured **evidence artifact** that conforms to [`.agents/schemas/evidence.schema.json`](../../../.agents/schemas/evidence.schema.json) and is consumed by [`strategy-selection`](../strategy-selection/SKILL.md) and [`script-authoring`](../script-authoring/SKILL.md).
 
 This skill calls `ssh`, `curl`/`Invoke-WebRequest`, etc. directly from the operator's machine. It does **not** mediate probes through SPP.
 
@@ -32,21 +32,21 @@ This skill calls `ssh`, `curl`/`Invoke-WebRequest`, etc. directly from the opera
 All six items below are non-negotiable. They restate `agent-skills-plan.md` §5 in skill-local form so the agent enforces them at execution time, not just at planning time.
 
 1. **Read-only by default.** Probes that only observe — banner grab, `WWW-Authenticate` header inspection, `whoami`, `id`, `uname`, GET on a documented API endpoint, login-form HTML inspection — run without per-probe confirmation.
-2. **Destructive probes that go beyond the seed account require explicit per-probe operator opt-in.** Key install, account create/delete, sudo-that-mutates non-seed-account state, POST/PUT/DELETE against undocumented endpoints — each is presented to the operator with a one-line *"what this will do, what could go wrong"* summary and proceeds only on explicit consent. Consent is **per probe, not per session**. Record the consent timestamp and the summary that was shown in the evidence artifact (`probeRecord.consent.grantedAt`, `probeRecord.consent.summaryShown` — see [`.agents/schemas/evidence.schema.json`](../../../.agents/schemas/evidence.schema.json) lines 173–188).
+2. **Destructive probes that go beyond the service account require explicit per-probe operator opt-in.** Key install, account create/delete, sudo-that-mutates non-service-account state, POST/PUT/DELETE against undocumented endpoints — each is presented to the operator with a one-line *"what this will do, what could go wrong"* summary and proceeds only on explicit consent. Consent is **per probe, not per session**. Record the consent timestamp and the summary that was shown in the evidence artifact (`probeRecord.consent.grantedAt`, `probeRecord.consent.summaryShown` — see [`.agents/schemas/evidence.schema.json`](../../../.agents/schemas/evidence.schema.json) lines 173–188).
 
-   **Exception: the seed account password on the target under test.** Once `nonProductionAffirmed=true` is set, the seed account *is* a test account, and rotating its password as part of validating the workflow under test is an announced operation, not a per-probe consent gate. The agent announces the intent up front (e.g., *"I'll rotate the seed account password during this iteration to exercise `ChangePassword` and can restore it at the end."*) and proceeds. Record the announcement once on `probeRun` (free-text in the run summary) rather than as a destructive `probeRecord`. This exception is scoped narrowly: it covers the seed account on the target identified in `target.host`, and only operations the workflow itself is testing.
+   **Exception: the service account password on the target under test.** Once `nonProductionAffirmed=true` is set, the service account *is* a test account, and rotating its password as part of validating the workflow under test is an announced operation, not a per-probe consent gate. The agent announces the intent up front (e.g., *"I'll rotate the service account password during this iteration to exercise `ChangePassword` and can restore it at the end."*) and proceeds. Record the announcement once on `probeRun` (free-text in the run summary) rather than as a destructive `probeRecord`. This exception is scoped narrowly: it covers the service account on the target identified in `target.host`, and only operations the workflow itself is testing.
 3. **Rate limits.** Hard cap of 3 authentication attempts per minute per target. Back off on any auth failure rather than retrying. The cap exists to avoid tripping account-lockout policies and IDS, not as a guideline to be ignored when "just one more try" looks productive.
 4. **No production targets.** This skill refuses to run if the operator has not affirmed the target is non-production. The affirmation is captured as `target.nonProductionAffirmed: true` in the evidence artifact (schema line 40). The affirmation is a soft control: it places responsibility on the operator. The agent does not (and cannot) independently verify environment classification.
-5. **Pre-flight echo.** Before the first probe of a session, print the planned probe sequence, the seed account name (not the secret), and the target host, and wait for an explicit "go" from the operator. If the seed password has not yet been provided, ask for it in the same turn as the echo block, with a one-line reminder that the operator can rotate it later.
+5. **Pre-flight echo.** Before the first probe of a session, print the planned probe sequence, the service account name (not the secret), and the target host, and wait for an explicit "go" from the operator. The service-account credential should already have been captured during requirements gathering (per *Question discipline* in `AGENTS.md`); if for some reason it has not, ask for it in the same turn as the echo block, with a one-line reminder that the operator can rotate it later.
 6. **Fail-closed on lockout / throttle / MFA signals.** If any probe response indicates lockout, throttling, or MFA challenge, stop probing immediately and surface to the operator. Do not continue down the playbook. Record `probeRun.haltedReason` accordingly (`lockout-signal | throttle-signal | mfa-challenge | rate-limit-exceeded | operator-stop | operator-denied-destructive | error`; enum at schema lines 92–103).
 
 If the agent cannot satisfy any of the six items, it stops and asks. Bypassing the contract is never acceptable, even when the operator nominally consents to skip it — the contract exists precisely to catch the consequences of "this will be fine" decisions.
 
 ## Evidence artifact
 
-Every probing session produces one evidence artifact, conforming to [`.agents/schemas/evidence.schema.json`](../../../.agents/schemas/evidence.schema.json). Required fields: `schemaVersion` (`"0.1"`), `protocol` (`ssh` or `http`), `target` (with `host` and `nonProductionAffirmed`), `seed` (account name and `credentialKind` — never the secret), and `probeRun` (with `startedAt` and an ordered `probes` array).
+Every probing session produces one evidence artifact, conforming to [`.agents/schemas/evidence.schema.json`](../../../.agents/schemas/evidence.schema.json). Required fields: `schemaVersion` (`"0.1"`), `protocol` (`ssh` or `http`), `target` (with `host` and `nonProductionAffirmed`), `serviceAccount` (account name and `credentialKind` — never the secret), and `probeRun` (with `startedAt` and an ordered `probes` array).
 
-**Secrets never appear in evidence.** The `seed.accountName` field is required; there is no field for the secret. `probeRecord.command` substitutes a placeholder for any credential. This is enforced by the schema's `additionalProperties: false` at the top level — invented secret-bearing fields fail validation.
+**Secrets never appear in evidence.** The `serviceAccount.accountName` field is required; there is no field for the secret. `probeRecord.command` substitutes a placeholder for any credential. This is enforced by the schema's `additionalProperties: false` at the top level — invented secret-bearing fields fail validation.
 
 Protocol-specific findings live under `sshFindings` or `httpFindings`. The v0 schema marks the internal shapes of these as TODO and intentionally permissive; this skill is the first consumer to populate them. When the playbooks below settle on a final shape, propose a schema bump as a follow-up — do not silently invent fields the schema rejects.
 
@@ -57,10 +57,11 @@ Protocol-specific findings live under `sshFindings` or `httpFindings`. The v0 sc
 Before the first probe of a session, print and wait for "go":
 
 ```
-Target:        <host>[:<port>]
-Protocol:      <ssh | http>
-Seed account:  <accountName>           (secret not echoed)
-Non-production: <yes / NOT AFFIRMED>
+Target:           <host>[:<port>]
+Protocol:         <ssh | http>
+Service account:  <accountName>           (secret not echoed)
+Credential kind:  <password | ssh-key | api-key | bearer-token>
+Non-production:   <yes / NOT AFFIRMED>
 Planned probes (in order):
   1. <category> — <one-line description> — <read-only | destructive>
   2. ...
@@ -70,7 +71,7 @@ If `nonProductionAffirmed` is not yet true, the echo block stops at that line an
 
 ## Surface blockers immediately
 
-When a probe reveals that a prerequisite the operator named is missing or wrong — the managed account doesn't exist, the target hostname doesn't resolve, the documented API endpoint returns 404, the seed account lacks the privilege the workflow assumes — **stop the playbook on that finding and ask**. Do not bundle it with later findings or carry on with probes that depend on the missing thing.
+When a probe reveals that a prerequisite the operator named is missing or wrong — the managed account doesn't exist, the target hostname doesn't resolve, the documented API endpoint returns 404, the service account lacks the privilege the workflow assumes — **stop the playbook on that finding and ask**. Do not bundle it with later findings or carry on with probes that depend on the missing thing.
 
 When asking, give the operator something to act on rather than just the negative result:
 
@@ -116,9 +117,9 @@ A probe that runs a privileged command (`sudo something-that-mutates`) is **dest
 
 Read-only: which password-change tooling is available (`which passwd chpasswd`), and whether the account is self-managed vs service-managed. Identifying the tool is read-only.
 
-Actually rotating the seed account's password to validate the workflow under test is covered by the contract item 2 exception: announce the intent up front, proceed without per-probe consent, restore at the end if the workflow allows. *Other* destructive password operations — rotating a non-seed account, changing a password on a different host — remain destructive probes requiring per-probe consent.
+Actually rotating the service account's password to validate the workflow under test is covered by the contract item 2 exception: announce the intent up front, proceed without per-probe consent, restore at the end if the workflow allows. *Other* destructive password operations — rotating a non-service-account, changing a password on a different host — remain destructive probes requiring per-probe consent.
 
-When announcing the seed-account rotation, present the one-line summary explicitly: *"I'll rotate the seed account password during this iteration to exercise the workflow; capture the new value if you need it for re-auth, and I'll restore the original at the end if you'd like."*
+When announcing the service-account rotation, present the one-line summary explicitly: *"I'll rotate the service account password during this iteration to exercise the workflow; capture the new value if you need it for re-auth, and I'll restore the original at the end if you'd like."*
 
 Captured into `sshFindings.passwordChangeCommand`.
 
@@ -142,7 +143,7 @@ GET the login page and read the rendered HTML. Extract: form `action` URL, field
 
 ### `cookie` — session shape
 
-GET → POST a single round-trip with the seed credential (still subject to the rate limit), inspect the `Set-Cookie` headers and whether subsequent calls succeed without re-auth. The `POST` to a login endpoint is read-only by intent — it does not mutate target state in the sense the contract guards against — but it counts toward the auth-attempt rate cap. Captured into `httpFindings.cookieBehavior`.
+GET → POST a single round-trip with the service-account credential (still subject to the rate limit), inspect the `Set-Cookie` headers and whether subsequent calls succeed without re-auth. The `POST` to a login endpoint is read-only by intent — it does not mutate target state in the sense the contract guards against — but it counts toward the auth-attempt rate cap. Captured into `httpFindings.cookieBehavior`.
 
 ### `api-discovery` — what endpoints exist?
 

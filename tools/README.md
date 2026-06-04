@@ -43,16 +43,18 @@ programmer error and throws.
 | `-AssetToUse` | optional | Asset disambiguator. Pass-through. |
 | `-AssetPartition` / `-AssetPartitionId` | optional | Asset-partition disambiguators. Pass-through. |
 | `-SchemaFile` | optional | Override JSON Schema path. Defaults to `<repo>/schema/custom-platform-script.schema.json` relative to this script. |
-| `-Appliance`, `-AccessToken`, `-Insecure` | optional | Pass-through to safeguard-ps cmdlets. Usually you connect once via `Connect-Safeguard -Browser` and let the cached `$Global:SafeguardSession` carry through. |
+| `-Appliance`, `-AccessToken`, `-Insecure` | optional | Pass-through to safeguard-ps cmdlets. Usually you connect once via `Connect-Safeguard -DeviceCode` (or `-Browser`) and let the cached `$Global:SafeguardSession` carry through. |
 
 ### Authentication
 
 `Invoke-PlatformDevLoop.ps1` does **not** call `Connect-Safeguard` itself.
-Connect once before invoking, ideally with `-Browser` (PKCE) per the
-agent-skills working agreement:
+Connect once before invoking, preferring `-DeviceCode` (PKCE; prints a
+verification URL and short code rather than launching a local browser),
+falling back to `-Browser` if the appliance does not have the Device Code
+grant enabled:
 
 ```powershell
-Connect-Safeguard -Appliance <host> -Insecure -Browser
+Connect-Safeguard -Appliance <host> -Insecure -DeviceCode
 ```
 
 If you bypass the cached session by passing `-AccessToken`, that token is
@@ -332,7 +334,7 @@ code) only on programmer error:
 # Exit 0; phases[0].status = success; phases 1..3 skipped.
 
 # 2. Appliance dry-run (validate only).
-Connect-Safeguard -Appliance 192.168.117.15 -Insecure -Browser
+Connect-Safeguard -Appliance 192.168.117.15 -Insecure -DeviceCode
 .\tools\Invoke-PlatformDevLoop.ps1 `
     -ScriptFile .\samples\ssh\generic-linux\GenericLinux.json `
     -ValidateOnly -Insecure
