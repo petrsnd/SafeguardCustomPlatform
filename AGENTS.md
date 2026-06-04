@@ -63,6 +63,20 @@ The agent declares the active mode at the start of every session. Each skill dec
 
 If the agent is unsure which mode applies, it asks the operator before proceeding.
 
+## Question discipline
+
+The agent's default posture is **act, then ask only when blocked**. Every up-front question costs operator time; the iterative debug loop already expects course-correction, so a wrong-but-recoverable choice usually beats a question. Concretely:
+
+- **Ask only what is required to take the next action.** Do not pre-collect facts the next step doesn't yet need. Probing rarely needs the operator's deployment topology; authoring rarely needs port numbers.
+- **Try, then ask on failure.** When two paths exist (secure vs `-Insecure`, module-installed vs not, asset-exists vs not), pick the safer/more-common path and try it. Ask only when the attempt errors out and the next step depends on the answer.
+- **Ask for required secrets directly.** When probing, the agent needs the seed account password — ask for it in the same turn as the pre-flight echo, with a one-line note that the operator can rotate it after the workflow is done. Don't trade multiple turns for "do you have a credential / how would you like to provide it / …".
+- **Treat `nonProductionAffirmed=true` as license to exercise the operations under test.** Once the operator affirms non-prod, the seed account *is* a test account. The agent may run `CheckPassword`/`ChangePassword` against it as part of the workflow, with an up-front announcement that the password will be rotated and (where the workflow allows) restored at the end. This is an announcement, not a per-probe consent gate. The probe-safety contract's destructive-probe rule still applies to operations beyond the seed-account-on-this-target's password (key installs, account creation, sudo-that-mutates, etc.).
+- **Do not ask "is this tool installed?".** Check first; if missing, ask once whether to install (e.g., `Install-Module safeguard-ps -Scope CurrentUser` from PowerShell Gallery, latest version).
+- **Do not ask "does this asset exist?" on the new-platform workflow.** It cannot — the platform is new. Asset/account lookup is part of the enhance-platform workflow only.
+- **Do not ask "are you logged in yet?".** `Connect-Safeguard -Browser` blocks until login completes (or fails); await the cmdlet's own success/failure signal rather than polling the operator. Persist the same PowerShell session across iterations so re-login is rare.
+
+If the agent finds itself drafting a third clarifying question before any tool has run, that is the signal to stop, pick a default, and try.
+
 ## Notation: PowerShell vs API vs concept
 
 Agent-facing material in this repo distinguishes three shapes so an agent never has to guess whether a token is a cmdlet parameter, an API field, or a transport-agnostic idea.
@@ -81,7 +95,7 @@ Rule of thumb: this `AGENTS.md` speaks **concept**. The skills speak **PowerShel
 - **Connect with `-Browser` only.** All `safeguard-ps` connections in agent flows use `Connect-Safeguard -Browser` (interactive PKCE). No password-in-script recipes.
 - **Never operate against a production target.** The operator must affirm the target is non-production before any probe or trigger runs. The affirmation is a soft control — responsibility rests with the operator. The agent does not (and cannot) verify environment classification independently.
 - **Never log session tokens or secrets.** `$SafeguardSession`, target passwords, API keys, and private keys must not appear in evidence files, status messages, or operator-visible output.
-- **Probe-safety contract.** The `target-probing` skill enforces a strict contract: read-only by default, per-probe operator consent for any destructive probe (password change, key install, account create/delete, POST/PUT/DELETE against unknown endpoints), a hard auth-attempt rate limit (default 3/min), pre-flight echo of the planned probe sequence, and fail-closed behavior on lockout / throttle / MFA-challenge signals. See `.agents/skills/target-probing/SKILL.md`.
+- **Probe-safety contract.** The `target-probing` skill enforces a strict contract: read-only by default, per-probe operator consent for destructive probes that go beyond the seed account on the target under test (key install, account create/delete, sudo-that-mutates, POST/PUT/DELETE against undocumented endpoints), a hard auth-attempt rate limit (default 3/min), pre-flight echo of the planned probe sequence, and fail-closed behavior on lockout / throttle / MFA-challenge signals. Rotating the seed account password as part of the workflow under test is announced up front but does not require per-probe consent (see *Question discipline* above). See `.agents/skills/target-probing/SKILL.md`.
 - **`SchemaOnly` is not a correctness signal.** Local schema validation only proves the JSON is well-formed and conformant. It does not catch undefined variables in `Do` blocks, regex that does not match in practice, or status-message ordering. Cross-reference samples for analogous patterns before treating green as ready-to-import.
 
 ## Sample and template index
@@ -110,7 +124,7 @@ Use this workflow when the operator's request is to build a custom platform that
 3. **Probe the target.** Hand off to [`target-probing`](.agents/skills/target-probing/SKILL.md). The skill enforces its own probe-safety contract and produces an evidence artifact conforming to [`.agents/schemas/evidence.schema.json`](.agents/schemas/evidence.schema.json). In `author-only` mode this step is skipped and the workflow proceeds with whatever the operator can supply by hand.
 4. **Select a strategy.** Hand off to [`strategy-selection`](.agents/skills/strategy-selection/SKILL.md) with the probe evidence (or the operator-supplied substitute) and any vendor docs. Output: one of the six authoring patterns plus credential-intent and self-managed-vs-service-account.
 5. **Author the JSON.** Hand off to [`script-authoring`](.agents/skills/script-authoring/SKILL.md). The skill mandates the fast inner loop: local schema validation against [`schema/custom-platform-script.schema.json`](schema/custom-platform-script.schema.json) before any appliance round-trip. `SchemaOnly` green is necessary but not sufficient — cross-reference samples for analogous patterns before declaring ready.
-6. **Validate, import, and trigger.** Hand off to [`safeguard-ps-operations`](.agents/skills/safeguard-ps-operations/SKILL.md), which prefers [`tools/Invoke-PlatformDevLoop.ps1`](tools/Invoke-PlatformDevLoop.ps1) over re-implementing the loop. Trigger with extended logging enabled so a structured task log is produced. Requires `full-loop` mode.
+6. **Validate, import, and trigger.** Hand off to [`safeguard-ps-operations`](.agents/skills/safeguard-ps-operations/SKILL.md), which prefers [`tools/Invoke-PlatformDevLoop.ps1`](tools/Invoke-PlatformDevLoop.ps1) over re-implementing the loop. The asset and account do not yet exist on the appliance — create them directly without a pre-check (the lookup-first dance belongs to the enhance-platform workflow). Trigger with extended logging enabled so a structured task log is produced. Requires `full-loop` mode.
 7. **Analyze the task log.** Hand off to [`task-log-analysis`](.agents/skills/task-log-analysis/SKILL.md). It classifies the failure phase, extracts the actionable signal, and recommends the next iteration.
 8. **Enter the iterative debug loop** (below) until green or the loop budget triggers escalation.
 

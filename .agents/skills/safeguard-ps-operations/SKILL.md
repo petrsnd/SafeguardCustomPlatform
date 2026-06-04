@@ -50,11 +50,41 @@ and pastes the output back. Use that output as the source of truth.
 
 ## Authentication
 
-Connect with `-Browser` (PKCE) only. No password-in-script recipes; no `-Username`/`-Password` parameters in agent flows.
+### Module presence: check, don't ask
+
+Before invoking any cmdlet, verify `safeguard-ps` is installed:
 
 ```powershell
-Connect-Safeguard -Appliance <host> [-Insecure] -Browser
+Get-Module -ListAvailable -Name safeguard-ps
 ```
+
+If the module is not present, ask the operator **once** for permission to install:
+
+```powershell
+Install-Module -Name safeguard-ps -Scope CurrentUser
+```
+
+Latest stable from PowerShell Gallery is the default. Do not ask "is `safeguard-ps` available" or "which version do you have" first — check, then proceed or ask once.
+
+### Connect: try secure, fall back on error
+
+Connect with `-Browser` (PKCE) only. No password-in-script recipes; no `-Username`/`-Password` parameters in agent flows. Try the **secure** form first:
+
+```powershell
+Connect-Safeguard -Appliance <host> -Browser
+```
+
+`Connect-Safeguard -Browser` blocks until the PKCE callback completes; await its own success/failure rather than asking the operator "are you logged in yet?". On a TLS/cert error (self-signed cert, mismatched CN — common on lab appliances), ask **once** for permission to retry with `-Insecure`:
+
+```powershell
+Connect-Safeguard -Appliance <host> -Insecure -Browser
+```
+
+Do not pre-ask whether the appliance has a valid certificate. Try secure; the error message tells both the operator and the agent unambiguously when `-Insecure` is needed.
+
+### Persist the session across iterations
+
+`Connect-Safeguard` caches credentials in `$Global:SafeguardSession`. Reuse the same PowerShell session across the iterative debug loop so re-login is rare. Each restart of the shell (lost session, agent reset, `Disconnect-Safeguard`) costs a full PKCE round-trip; plan tooling and shell choices accordingly.
 
 This pattern is verified in [`tools/README.md`](../../../tools/README.md) ("Authentication" section) and is what `tools/Invoke-PlatformDevLoop.ps1` expects via the cached `$Global:SafeguardSession`. The dev-loop wrapper itself does not call `Connect-Safeguard`; the operator connects once at the start of the session.
 
@@ -100,10 +130,21 @@ Output contract (one JSON document on stdout, phase-indexed exit code, programme
 
 When a hand-rolled cmdlet sequence is unavoidable (e.g., a one-off `Export-…` to capture deployed JSON), still emit progress to stderr and any structured result to stdout so callers can parse cleanly.
 
+## Mandatory sequencing: validate before import, every time
+
+Schema check → `Test-SafeguardCustomPlatformScript` → `Import-SafeguardCustomPlatformScript`. Always in that order. Never:
+
+- Import a draft that has not been schema-validated locally (the fast inner loop catches malformed JSON cheaply).
+- Import a draft that has not passed `Test-SafeguardCustomPlatformScript` against the appliance. The server-side dry-run catches imported-function arity errors, undeclared-variable references, and other things schema validation cannot. Skipping it leaks bad scripts onto the appliance and makes the iteration loop slower, not faster.
+- "Just re-import to see if it works" after editing a draft that was last validated several edits ago.
+
+The dev-loop wrapper enforces this sequence: `-SchemaOnly` is the schema check alone, `-ValidateOnly` runs schema + `Test-`, `-NoTrigger` runs schema + `Test-` + `Import-` (no trigger), and the default runs the full chain. Use the wrapper rather than chaining cmdlets in prose.
+
 ## Idempotency conventions
 
 - **Platform lookups before import.** `Import-SafeguardCustomPlatformScript -PlatformToEdit <name|id>` errors with `Unable to find custom platform matching '<name>'` if the platform does not exist; the dev-loop wrapper surfaces this verbatim as the `import` phase error (see real failure example in [`tools/README.md`](../../../tools/README.md), exit-2 block). Confirm the platform exists once at the start of a session, then re-use the name.
-- **Asset / account.** Look up by name or ID; edit if found; create otherwise. Do not delete-then-create.
+- **Asset / account on new-platform workflow.** They cannot exist yet — the platform is new. Create directly without a pre-check; the new-platform workflow in [`AGENTS.md`](../../../AGENTS.md) is explicit about this. Do not waste a turn asking the operator "does this asset exist already?".
+- **Asset / account on enhance-platform workflow.** Look up by name or ID; edit if found; create otherwise. Do not delete-then-create.
 - **Triggers** are not idempotent in the strict sense (each run produces a new task log), but re-triggering after a failed run is safe — the prior task log persists.
 
 ## Error semantics this skill recognises
