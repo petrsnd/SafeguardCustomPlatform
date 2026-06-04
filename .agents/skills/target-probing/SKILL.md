@@ -68,6 +68,18 @@ Planned probes (in order):
 
 If `nonProductionAffirmed` is not yet true, the echo block stops at that line and asks the operator to affirm. Do not proceed without the affirmation.
 
+## Surface blockers immediately
+
+When a probe reveals that a prerequisite the operator named is missing or wrong — the managed account doesn't exist, the target hostname doesn't resolve, the documented API endpoint returns 404, the seed account lacks the privilege the workflow assumes — **stop the playbook on that finding and ask**. Do not bundle it with later findings or carry on with probes that depend on the missing thing.
+
+When asking, give the operator something to act on rather than just the negative result:
+
+- Echo the exact command run and the output that revealed the gap.
+- Where it is cheap to gather, list the closest matches the agent already saw — e.g., for a missing managed account, run `getent passwd | awk -F: '$3>=1000 && $3<60000 {print $1}'` and show non-system users; for a missing API endpoint, list the endpoints that did return 200.
+- Ask one focused question with sensible choices: *"`mcptest1` doesn't exist on the target. Other non-system users I see are: `testmcp1`, `alice`, `bob`. Pick one, give me a different name, or have me create `mcptest1`?"*
+
+This rule complements `AGENTS.md` *Question discipline*: the default posture is still act-then-ask, but a missing prerequisite is an immediate blocker, not a question deferred to the end of the playbook.
+
 ## SSH playbook
 
 Categories the playbook covers, all `read-only` by default. Each maps to a `probeRecord.category` value (schema line 156–167) and contributes to `sshFindings` (schema lines 206–231).

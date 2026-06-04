@@ -82,13 +82,49 @@ Connect-Safeguard -Appliance <host> -Insecure -Browser
 
 Do not pre-ask whether the appliance has a valid certificate. Try secure; the error message tells both the operator and the agent unambiguously when `-Insecure` is needed.
 
-### Persist the session across iterations
+### Persist the session across iterations — serialize the token, never keep a long-running shell
 
-`Connect-Safeguard` caches credentials in `$Global:SafeguardSession`. Reuse the same PowerShell session across the iterative debug loop so re-login is rare. Each restart of the shell (lost session, agent reset, `Disconnect-Safeguard`) costs a full PKCE round-trip; plan tooling and shell choices accordingly.
+**Login budget = 1 per voyage.** Each `Connect-Safeguard -Browser` costs the operator real time and attention. Connect exactly once.
 
-This pattern is verified in [`tools/README.md`](../../../tools/README.md) ("Authentication" section) and is what `tools/Invoke-PlatformDevLoop.ps1` expects via the cached `$Global:SafeguardSession`. The dev-loop wrapper itself does not call `Connect-Safeguard`; the operator connects once at the start of the session.
+**Long-running interactive PowerShell sessions are banned in agent flows.** They wedge on PSReadLine prediction, swallow `$ConfirmPreference` prompts, return stale back-buffer through `read_powershell`, and routinely cost a re-login when the agent has to kill them. Do not start a persistent shell to hold `$Global:SafeguardSession`. Do not invoke `Connect-Safeguard` as an async command kept alive across iterations.
 
-After connecting, treat the session as opaque. Never log `$Global:SafeguardSession`, the access token, or any password parameter.
+The only correct shape is short-lived sync `powershell -Command { ... }` calls. `$Global:SafeguardSession` holds **a short-lived bearer token, not a permanent credential** — valid for the rest of the voyage (typically several hours), safe to serialize to the gitignored per-session state directory, expires on its own.
+
+**Step 1 — connect once and serialize.** Sync call; the shell exits when `Connect-Safeguard` returns (no `-NoExit`, no async):
+
+```
+Connect-Safeguard -Appliance <host> -Insecure -Browser | Out-Null
+$Global:SafeguardSession |
+  ConvertTo-Json -Depth 5 |
+  Set-Content "$env:USERPROFILE\.copilot\session-state\<id>\files\sg-session.json" -Encoding utf8
+```
+
+**Step 2 — every subsequent cmdlet is its own fresh sync call.** Re-hydrate the saved session and pass `Appliance`, `AccessToken`, and `Insecure` straight off it. `Insecure` is a switch parameter, so it takes the colon-form `-Insecure:$s.Insecure` when the value comes from a property:
+
+```
+$s = Get-Content "<session-state>\sg-session.json" | ConvertFrom-Json
+Get-SafeguardCustomPlatform -Appliance $s.Appliance -Insecure:$s.Insecure -AccessToken $s.AccessToken <name>
+Invoke-SafeguardAssetAccountPasswordChange -Appliance $s.Appliance -Insecure:$s.Insecure -AccessToken $s.AccessToken `
+  -AssetToUse <id> -AccountToUse <id> -ExtendedLogging
+Get-SafeguardTaskLog -Appliance $s.Appliance -Insecure:$s.Insecure -AccessToken $s.AccessToken -TaskId <guid>
+```
+
+Every safeguard-ps cmdlet that takes `-Appliance` also accepts `-AccessToken`. Threading those three through every call eliminates the dependency on `$Global:SafeguardSession` entirely — output returns cleanly via stdout, no PSReadLine wedging, no confirmation prompts swallowing inputs. Pulling `Insecure` from the session (rather than hardcoding `-Insecure`) keeps the agent honest: if the operator connected with a valid cert, the saved value is `$false` and every call validates.
+
+#### Why explicit threading and not "just re-hydrate the session global"
+
+Two superficially-simpler shortcuts do **not** work. Documented here so the next agent does not re-discover them the hard way:
+
+- **`Connect-Safeguard` has no parameter set that accepts an existing access token.** `Get-Help Connect-Safeguard -Full` lists seven parameter sets (Resource Owner, Credential, PKCE, Browser, Certificate, Gui, DeviceCode); every one performs a fresh login. `-NoSessionVariable` is the inverse direction (return the token instead of caching it); it does not consume one.
+- **Assigning to `$Global:SafeguardSession` directly does not re-hydrate the session.** Writing `$Global:SafeguardSession = Get-Content sg-session.json | ConvertFrom-Json` populates the global with the right shape, but cmdlets that use the session variable still emit `No current Safeguard login session.` and prompt for `-Appliance`, hanging non-interactive runs. The cmdlets evidently consult a module-private variable that only `Connect-Safeguard` itself can set. Verified empirically during the Phase 5 maiden voyage.
+
+If a future cmdlet is found that **only** reads the session variable and refuses `-AccessToken`, the correct response is to file a defect against safeguard-ps to add the parameter set — not to spin up a long-running shell to host the cmdlet.
+
+Treat `sg-session.json` like any other secret: write it only under the per-session state directory, never commit it, never paste it into chat or task-log output. Delete it at the end of the voyage. The bearer token redacts itself naturally on expiry; a stale file cannot be used to attack the appliance later. Never log `$Global:SafeguardSession`, the access token, or any password parameter to operator-visible output.
+
+If the agent finds itself about to call `Connect-Safeguard` a second time in the same voyage, **stop**. The token in `sg-session.json` is still good unless the operator rebooted the appliance or several hours have passed; re-read it. A second login is a defect, not a workaround.
+
+This pattern is verified in [`tools/README.md`](../../../tools/README.md) ("Authentication" section). `tools/Invoke-PlatformDevLoop.ps1` itself does not call `Connect-Safeguard`; the operator connects once and the wrapper picks up `$Global:SafeguardSession` (when invoked from a session that has it cached) or `-AccessToken` plumbed through.
 
 ## Cmdlet menu
 

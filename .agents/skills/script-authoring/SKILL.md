@@ -74,6 +74,18 @@ Before declaring a draft "ready to import," cross-reference an analogous sample 
 
 If a `Do`-block construct does not appear in any sample or template, **stop and ask** before adding it. The grounding rule applies inside the JSON, not just around it.
 
+### Bake diagnostics in on the first try
+
+Every appliance round-trip (validate → import → trigger → fetch task log) costs the operator real time. Treat it as the most expensive resource in the loop. Before a trigger, mentally walk through every failure branch the script can take and ask: *if this fails, will the task log tell me **why**, or will I need another iteration to find out?* If the answer is "another iteration", instrument the script before triggering — not after the first failure surprises you.
+
+Concrete rules for any `Send`/`ExecuteCommand` block whose output is parsed:
+
+- **Capture stderr.** Use `2>&1` (combine streams) for shell pipelines whose output you parse. Never `2>/dev/null`. Never bare stdout-only on a command that can fail. The actual diagnostic almost always comes out on stderr.
+- **Capture exit codes explicitly.** Prefer `cmd 2>&1; echo MARKER_RC_$?\n` over `cmd && echo OK || echo FAIL`. The numeric code distinguishes auth failure from permission failure from syntax failure without another round trip; the binary OK/FAIL form throws that information away.
+- **Suppress sudo's password prompt** with `-S -p ''` when piping a password into sudo. Without `-p ''`, sudo's prompt text leaks into the captured buffer and pollutes the regex / parse logic of whatever command follows.
+- **Terminate `Send` buffers with `\n`.** A PTY shell will not execute a typed line until it sees a newline. A `Send` without `\n` causes the next `Receive` to time out (or match echo) — a silent class of bug that costs an entire iteration to diagnose.
+- **Echo the parsed buffer back** via `WriteResponseObject` (or the equivalent diagnostic command) so it lands in the task log. Without this, parse-condition failures in `Condition` blocks produce a `Returning false` with no visible reason — another wasted iteration.
+
 ### Function-call signatures: copy from samples, do not infer
 
 When emitting a `Function` call — whether to a locally-defined function, an imported library function, or anything else with a name and `Parameters` array — the agent **must** find at least one working call site for that function in `samples/` and copy the `Parameters` array shape verbatim.
