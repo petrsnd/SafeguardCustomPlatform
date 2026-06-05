@@ -95,8 +95,6 @@ If iteration N+1 fails with the same classified phase and substantively the same
 2. **Read the matching sample's full operation in context**, not just the line that grep returned. The shape around the line — what `Receive` precedes it, which buffer is marked `ContainsSecret`, whether the surrounding command has quotes — is usually what makes the sample work.
 3. Port the working shape into the draft as a single change. Trigger. If the new failure is in a different phase, the port worked; iterate from there.
 
-This rule was paid for in blood during the Phase 5 maiden voyage: three back-to-back `printf | sudo -S chpasswd` ChangePassword iterations from first principles, when one `grep -rn "passwd" samples/ssh/` would have surfaced [`samples/ssh/generic-linux/GenericLinux.json`](../../../samples/ssh/generic-linux/GenericLinux.json) lines 281–340 — the proven prompt-driven `sudo passwd <user>` pattern with `Condition`-gated `Send` blocks for each prompt — on iteration 2.
-
 ### Function-call signatures: copy from samples, do not infer
 
 When emitting a `Function` call — whether to a locally-defined function, an imported library function, or anything else with a name and `Parameters` array — the agent **must** find at least one working call site for that function in `samples/` and copy the `Parameters` array shape verbatim.
@@ -168,9 +166,7 @@ Reference: [`docs/guides/ssh-platforms.md`](../../../docs/guides/ssh-platforms.m
 
 #### Catch blocks must log before falling back
 
-Any `Try`/`Catch` whose `Catch` produces a verdict (rather than re-raising) **must log the caught exception** via `WriteResponseObject` (or a `Status` message that includes the exception text) before emitting the fallback value. Otherwise the next agent reads a clean verdict — `PasswordMismatch`, `false`, `Error` — and attributes it to target state when the actual cause was a script-side bug the catch swallowed.
-
-This rule was paid for during Phase 5 by an iteration that returned a yescrypt "mismatch" that was actually a Z.Expressions overload error in a pre-split `SetItem`. The visible error message *did* carry the truth, but only because the catch happened to emit the inner exception in its `Status` message — most catch blocks in the wild do not.
+Any `Try`/`Catch` whose `Catch` produces a verdict (rather than re-raising) **must log the caught exception** via `WriteResponseObject` (or a `Status` message that includes the exception text) before emitting the fallback value. Otherwise the next agent reads a clean verdict — `PasswordMismatch`, `false`, `Error` — and attributes it to target state when the actual cause was a script-side bug the catch swallowed. A Z.Expressions overload error in a pre-split `SetItem`, for example, will surface as a bare `PasswordMismatch` unless the catch emits the inner exception text.
 
 ### http-api
 

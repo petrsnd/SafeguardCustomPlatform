@@ -46,7 +46,7 @@ Read both. The `Operation` log shows what the platform script intended; `SshComm
 
 ### Fetching a task log directly: `Get-SafeguardTaskLog` parameter shape
 
-Two non-obvious facts about the cmdlet that cost a round trip on the maiden voyage:
+Two non-obvious facts about the cmdlet:
 
 - **No-args vs `-TaskId` return entirely different shapes.** With no arguments, `Get-SafeguardTaskLog` returns a flat array of recent task-ID GUID strings across **all** tasks the session can see — a discovery call, not a log-fetching call. With `-TaskId <guid>` it returns the actual `{Recorded, Level, Event}` records for that task.
 - **Section headers come through with empty `Level`.** The synthetic `--- <logName> ---` separator entries SPP inserts between named logs (`Operation`, `SshCommunication`) carry empty `Level`. Treat any record whose `Level` is empty as a section delimiter, not as a real log event, and use it to know which named log the surrounding records belong to.

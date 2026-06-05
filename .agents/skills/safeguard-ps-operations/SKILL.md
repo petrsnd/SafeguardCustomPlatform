@@ -141,7 +141,7 @@ Every safeguard-ps cmdlet that takes `-Appliance` also accepts `-AccessToken`. T
 Two superficially-simpler shortcuts do **not** work. Documented here so the next agent does not re-discover them the hard way:
 
 - **`Connect-Safeguard` has no parameter set that accepts an existing access token.** `Get-Help Connect-Safeguard -Full` lists seven parameter sets (Resource Owner, Credential, PKCE, Browser, Certificate, Gui, DeviceCode); every one performs a fresh login. `-NoSessionVariable` is the inverse direction (return the token instead of caching it); it does not consume one.
-- **Assigning to `$Global:SafeguardSession` directly does not re-hydrate the session.** Writing `$Global:SafeguardSession = Get-Content sg-session.json | ConvertFrom-Json` populates the global with the right shape, but cmdlets that use the session variable still emit `No current Safeguard login session.` and prompt for `-Appliance`, hanging non-interactive runs. The cmdlets evidently consult a module-private variable that only `Connect-Safeguard` itself can set. Verified empirically during the Phase 5 maiden voyage.
+- **Assigning to `$Global:SafeguardSession` directly does not re-hydrate the session.** Writing `$Global:SafeguardSession = Get-Content sg-session.json | ConvertFrom-Json` populates the global with the right shape, but cmdlets that use the session variable still emit `No current Safeguard login session.` and prompt for `-Appliance`, hanging non-interactive runs. The cmdlets evidently consult a module-private variable that only `Connect-Safeguard` itself can set.
 
 If a future cmdlet is found that **only** reads the session variable and refuses `-AccessToken`, the correct response is to file a defect against safeguard-ps to add the parameter set — not to spin up a long-running shell to host the cmdlet.
 
@@ -182,7 +182,7 @@ If the operator triggered an operation without `-ExtendedLogging`, the task ID c
 
 ## Cmdlet quirks
 
-Five small gotchas that each cost an iteration on first encounter:
+Five cmdlet quirks:
 
 - **`-TaskId` requires a `[guid]` cast.** `Get-SafeguardTaskLog -TaskId "<id-string>"` rejects a bare string. Cast at the call site: `Get-SafeguardTaskLog -TaskId ([guid]$id)`.
 - **Task-log GUID lists are lexicographic, not chronological.** v1 GUIDs from the appliance are not time-ordered; sorting and taking the "last" item finds the wrong task. To identify the task a trigger just produced, **diff** the GUID set before and after the trigger and pick the new entry.
