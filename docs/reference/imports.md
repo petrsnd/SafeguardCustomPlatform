@@ -46,6 +46,8 @@ At runtime, the scripting engine expands the `Imports` list and merges the impor
 
 These are the 17 generic SSH-oriented system libraries currently suitable for custom platform scripts. Function names below are the most useful entry points visible in the built-in libraries; many libraries also include lower-level helper functions.
 
+> **For real call shapes, look at `samples/`.** This page lists library names and key entry points only — it intentionally does not document parameter lists. The deployed appliance's view of an imported function's arity and parameter order can drift from any external reference, so the trustworthy source is a working call site in a sample. Search the repo for `"Name": "<FunctionName>"` and copy the `Parameters` array from a sample that imports the same library.
+
 | Library | Purpose | Key functions provided | Use when |
 | --- | --- | --- | --- |
 | `LinuxSshLogin` | Standard Linux SSH login/logout handling, shell setup, and shared validation. | `LoginSsh`, `LogoutSsh`, `SetUpEnvironment`, `VerifyDelegationPrefix` | Most Linux SSH platforms that need the built-in prompt handling, shell detection, and logout flow. |
@@ -139,6 +141,7 @@ If you need more than login/logout, you can import multiple libraries in the sam
 
 ## See also
 
+- The `samples/` directory — every imported-function call site in the repo is a working call shape against a shipped appliance. Grep for `"Name": "<FunctionName>"` to find example calls.
 - [SSH Platforms Guide](../guides/ssh-platforms.md)
 - [Script Structure Reference](script-structure.md)
 - [Your First SSH Script](../tutorials/your-first-ssh-script.md)

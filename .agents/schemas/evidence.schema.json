@@ -1,0 +1,259 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/petrsnd/SafeguardCustomPlatform/main/.agents/schemas/evidence.schema.json",
+  "title": "Custom Platform Probing Evidence",
+  "description": "Internal agent contract. The evidence artifact produced by the target-probing skill and consumed by strategy-selection and script-authoring. Distinct from the human-facing platform-script schema in schema/. This is v0 — fields marked TODO require a real probing run to lock down their shape; do not invent values.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "protocol",
+    "target",
+    "serviceAccount",
+    "probeRun"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Version of this evidence schema. Bumped when the contract changes.",
+      "const": "0.1"
+    },
+    "protocol": {
+      "type": "string",
+      "description": "Transport protocol of the target. SSH and HTTP only — telnet is out of scope for the agent skill system.",
+      "enum": ["ssh", "http"]
+    },
+    "target": {
+      "type": "object",
+      "description": "Identification of the target system the probes ran against.",
+      "required": ["host"],
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "Hostname or IP of the target. No credentials."
+        },
+        "port": {
+          "type": "integer",
+          "description": "TCP port. Optional; default depends on protocol."
+        },
+        "nonProductionAffirmed": {
+          "type": "boolean",
+          "description": "Whether the operator has affirmed the target is non-production. The probe-safety contract requires this to be true before any probe runs."
+        }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "description": "Service-account identification used by probes to authenticate to the target. Secrets MUST NOT appear here — name and credential kind only.",
+      "required": ["accountName"],
+      "additionalProperties": false,
+      "properties": {
+        "accountName": {
+          "type": "string",
+          "description": "Username/account identifier used for probing. The secret itself is never recorded in evidence."
+        },
+        "credentialKind": {
+          "type": "string",
+          "description": "What kind of credential the service account uses. Sourced from operator declaration; not inferred.",
+          "enum": ["password", "ssh-key", "api-key", "bearer-token", "unknown"]
+        }
+      }
+    },
+    "probeRun": {
+      "type": "object",
+      "description": "Metadata about the probing session itself.",
+      "required": ["startedAt", "probes"],
+      "additionalProperties": false,
+      "properties": {
+        "startedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp when probing began."
+        },
+        "endedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp when probing concluded. Optional while probing is in progress."
+        },
+        "operatorTool": {
+          "type": "string",
+          "description": "Identifier of the agent runtime that performed the probes (e.g., 'github-copilot-cli', 'claude-code'). For audit only."
+        },
+        "probes": {
+          "type": "array",
+          "description": "Ordered record of probes executed. Each entry is a single probe step. Read-only probes record observations; destructive probes additionally record the explicit per-probe consent given by the operator (see the probe-safety contract in target-probing/SKILL.md).",
+          "items": {
+            "$ref": "#/definitions/probeRecord"
+          }
+        },
+        "haltedReason": {
+          "type": "string",
+          "description": "If probing stopped before completion, why. Examples: 'lockout-signal', 'throttle-signal', 'mfa-challenge', 'operator-stop', 'rate-limit-exceeded'.",
+          "enum": [
+            "completed",
+            "lockout-signal",
+            "throttle-signal",
+            "mfa-challenge",
+            "operator-stop",
+            "rate-limit-exceeded",
+            "operator-denied-destructive",
+            "error"
+          ]
+        }
+      }
+    },
+    "sshFindings": {
+      "$ref": "#/definitions/sshFindings",
+      "description": "Findings produced by SSH probe playbooks. Present only when protocol == 'ssh'."
+    },
+    "httpFindings": {
+      "$ref": "#/definitions/httpFindings",
+      "description": "Findings produced by HTTP probe playbooks. Present only when protocol == 'http'."
+    },
+    "strategyHints": {
+      "type": "object",
+      "description": "Optional hints from the probing skill that strategy-selection may consider. Not authoritative — strategy-selection makes the final call.",
+      "additionalProperties": false,
+      "properties": {
+        "preferredPattern": {
+          "type": "string",
+          "description": "If probing strongly suggests one of the four authoring patterns, name it here. Otherwise omit.",
+          "enum": [
+            "ssh-interactive",
+            "ssh-batch",
+            "http-api",
+            "http-form-fill"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Short, citation-style reason for the hint. Must reference a specific probe record, not be generic."
+        }
+      }
+    }
+  },
+  "definitions": {
+    "probeRecord": {
+      "type": "object",
+      "description": "A single probe step. Field shapes for 'observation' and 'destructiveDetails' are placeholders pending a real probing run; populated structures land in Phase 3 / Phase 5.",
+      "required": ["id", "kind", "command", "result"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable ID of the probe within this run. Used for back-references."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Probe classification. Read-only probes never mutate target state.",
+          "enum": ["read-only", "destructive"]
+        },
+        "category": {
+          "type": "string",
+          "description": "What the probe is investigating. SSH categories: prompt, batch-mode, sudo, password-change. HTTP categories: auth-scheme, login-form, cookie, api-discovery.",
+          "enum": [
+            "prompt",
+            "batch-mode",
+            "sudo",
+            "password-change",
+            "auth-scheme",
+            "login-form",
+            "cookie",
+            "api-discovery",
+            "other"
+          ]
+        },
+        "command": {
+          "type": "string",
+          "description": "The exact command or HTTP request line that was issued. No secrets — substitute placeholders for credentials."
+        },
+        "consent": {
+          "type": "object",
+          "description": "Required for destructive probes; absent for read-only probes.",
+          "additionalProperties": false,
+          "required": ["grantedAt"],
+          "properties": {
+            "grantedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp the operator granted explicit per-probe consent."
+            },
+            "summaryShown": {
+              "type": "string",
+              "description": "The one-line 'what this will do, what could go wrong' summary that the operator approved."
+            }
+          }
+        },
+        "result": {
+          "type": "string",
+          "description": "Outcome of the probe.",
+          "enum": ["ok", "failed", "skipped", "halted"]
+        },
+        "observation": {
+          "description": "TODO: structured observation payload. Shape locked down in Phase 3 once the SSH and HTTP playbooks are authored against real targets. Free-form for now.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "errorSignature": {
+          "type": "string",
+          "description": "If result is 'failed', a short stable signature suitable for matching against docs/agent-reference/failure-patterns.md. Optional."
+        }
+      }
+    },
+    "sshFindings": {
+      "type": "object",
+      "description": "SSH-specific finding shapes. Fields below are the categories the playbook MUST cover; their internal shape is intentionally permissive in v0 and will be tightened once more SSH targets have been probed.",
+      "additionalProperties": false,
+      "properties": {
+        "shellPrompt": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "What the shell prompt looks like, banner contents, motd presence, etc."
+        },
+        "batchModeSupported": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Whether non-interactive ExecuteCommand-style probes succeeded vs needed a PTY."
+        },
+        "sudoBehavior": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Whether sudo prompts for a password, has NOPASSWD, or is not present."
+        },
+        "passwordChangeCommand": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Which password-change command path the target supports (passwd, chpasswd, vendor-specific CLI, etc.) — observed, not assumed."
+        }
+      }
+    },
+    "httpFindings": {
+      "type": "object",
+      "description": "HTTP-specific finding shapes. Fields below are the categories the playbook MUST cover; their internal shape is intentionally permissive in v0 and will be tightened once more HTTP targets have been probed.",
+      "additionalProperties": false,
+      "properties": {
+        "authScheme": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Which authentication scheme(s) the target accepts (basic, bearer, api-key header, form-fill, cookie). Observed via WWW-Authenticate, login form inspection, etc."
+        },
+        "loginForm": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "If form-fill is in play: form action URL, field names, hidden tokens (CSRF), redirect chain."
+        },
+        "cookieBehavior": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Session cookie names, flags, lifetimes; whether session cookies suffice for subsequent calls."
+        },
+        "apiDiscovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Discovered API endpoints relevant to the planned operations (e.g., user lookup, password change, key rotation). Sourced from vendor docs or probe responses; never invented."
+        }
+      }
+    }
+  }
+}
