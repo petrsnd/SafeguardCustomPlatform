@@ -6,7 +6,7 @@ This catalog maps real error signatures observed in extended task logs to likely
 
 ## Provenance rule
 
-Every row is grounded in (a) a captured extended task-log JSON or cmdlet response and (b) a concrete fix that was applied and verified against the same target. Rows mined from prose guides, inferred from source, or invented from memory are explicitly not acceptable — they undermine the skill they support.
+Every row is grounded in (a) a captured extended task-log JSON or cmdlet response, **reproduced at least once to rule out transient artifacts like polling-timing races against unfinished async tasks**, and (b) a concrete fix that was applied and verified against the same target. Rows mined from prose guides, inferred from source, or invented from memory are explicitly not acceptable — they undermine the skill they support.
 
 When `task-log-analysis` encounters a signature this catalog does not cover, it falls back to the classification flow (connect / auth / parse / operation / unknown) and proposes a candidate row at the end of the loop for the operator to confirm.
 
