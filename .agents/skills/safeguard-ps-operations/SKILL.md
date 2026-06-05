@@ -50,7 +50,7 @@ Get-Help <Cmdlet> -Full | Out-String -Width 200
 
 If a cmdlet's parameter is a `[switch]` and the value comes from a variable, use the colon form (`-Insecure:$ins`, not `-Insecure $ins`). PowerShell silently swallows the latter on switches and the cmdlet ends up with the parameter's default — usually `$false` — which is rarely what the agent wanted. The value bound to the colon must be a `[bool]`.
 
-Two examples from the Phase 5 maiden voyage that one `Get-Help` call apiece would have prevented: assuming `New-SafeguardCustomPlatform` needed a separate `Import-` step (it accepts `-ScriptFile` directly), and not knowing `Get-SafeguardTaskLog` returns a flat array of GUID strings with no arguments and the actual `{Recorded, Level, Event}` records only with `-TaskId <guid>`.
+Sibling cmdlets are not symmetric. `Test-` and `Invoke-` pairs diverge in parameter names; `New-SafeguardCustomPlatform` accepts `-ScriptFile` directly with no separate `Import-` step; `Get-SafeguardTaskLog` with no arguments returns a flat GUID array and only returns `{Recorded, Level, Event}` records when given `-TaskId <guid>`. Run `Get-Help` on every cmdlet's first use in the voyage, even when a sibling was just used.
 
 ## Authentication
 
