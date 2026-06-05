@@ -96,6 +96,8 @@ Connect-Safeguard -Appliance <host> -DeviceCode
 Connect-Safeguard -Appliance <host> -Browser
 ```
 
+The verification URL and short code only appear on the cmdlet's stdout and the code expires in minutes. The agent must surface both to the operator when calling `Connect-Safeguard -DeviceCode` — the operator cannot complete the login otherwise.
+
 Both forms block until the PKCE callback completes; await the cmdlet's own success/failure rather than asking the operator "are you logged in yet?". On a TLS/cert error (self-signed cert, mismatched CN — common on lab appliances), ask **once** for permission to retry with `-Insecure`:
 
 ```powershell
