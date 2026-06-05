@@ -18,7 +18,7 @@ Before running any probe, consult [`AGENTS.md`](../../../AGENTS.md) for the acti
 
 ## Scope
 
-Local-shell recon recipes against a live target with a service-account credential. SSH and HTTP only — telnet/TN3270 is out of scope (`agent-skills-plan.md` §2). Probing produces a structured **evidence artifact** that conforms to [`.agents/schemas/evidence.schema.json`](../../../.agents/schemas/evidence.schema.json) and is consumed by [`strategy-selection`](../strategy-selection/SKILL.md) and [`script-authoring`](../script-authoring/SKILL.md).
+Local-shell recon recipes against a live target with a service-account credential. SSH and HTTP only — telnet/TN3270 is out of scope for the agent skill system. Probing produces a structured **evidence artifact** that conforms to [`.agents/schemas/evidence.schema.json`](../../../.agents/schemas/evidence.schema.json) and is consumed by [`strategy-selection`](../strategy-selection/SKILL.md) and [`script-authoring`](../script-authoring/SKILL.md).
 
 This skill calls `ssh`, `curl`/`Invoke-WebRequest`, etc. directly from the operator's machine. It does **not** mediate probes through SPP.
 
@@ -29,7 +29,7 @@ This skill calls `ssh`, `curl`/`Invoke-WebRequest`, etc. directly from the opera
 
 ## Probe-safety contract (mandatory)
 
-All six items below are non-negotiable. They restate `agent-skills-plan.md` §5 in skill-local form so the agent enforces them at execution time, not just at planning time.
+All six items below are non-negotiable. The agent enforces them at execution time, not just at planning time.
 
 1. **Read-only by default.** Probes that only observe — banner grab, `WWW-Authenticate` header inspection, `whoami`, `id`, `uname`, GET on a documented API endpoint, login-form HTML inspection — run without per-probe confirmation.
 2. **Destructive probes that go beyond the service account require explicit per-probe operator opt-in.** Key install, account create/delete, sudo-that-mutates non-service-account state, POST/PUT/DELETE against undocumented endpoints — each is presented to the operator with a one-line *"what this will do, what could go wrong"* summary and proceeds only on explicit consent. Consent is **per probe, not per session**. Record the consent timestamp and the summary that was shown in the evidence artifact (`probeRecord.consent.grantedAt`, `probeRecord.consent.summaryShown` — see [`.agents/schemas/evidence.schema.json`](../../../.agents/schemas/evidence.schema.json) lines 173–188).

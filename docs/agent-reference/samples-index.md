@@ -17,7 +17,7 @@ CI runs the same script with `-CheckOnly` and fails the build if the committed c
 - **operations** — intersection of top-level keys with the canonical operation list from `schema/custom-platform-script.schema.json`. Imports and user-defined functions never appear here.
 - **OS-family** — intentionally blank. Phase 1 prefers blank over guessed values; revisit in a later phase if needed.
 - **file-path** and **README** — filesystem facts. `—` means the field could not be determined.
-- `samples/telnet/` is excluded — telnet is out of scope for the agent skill system (see `agent-skills-plan.md` §2). The samples remain in the repo for human reference.
+- `samples/telnet/` is excluded — telnet is out of scope for the agent skill system. The samples remain in the repo for human reference.
 
 ## Samples
 

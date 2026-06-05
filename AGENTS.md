@@ -7,7 +7,6 @@ This file is the agent orchestrator. Read it first.
 ## Project structure
 
 - `AGENTS.md` (this file) — orchestrator: workflows + routing table.
-- `agent-skills-plan.md` — master plan for the agent skill system.
 - `.agents/` — `skills/` (one subdirectory per capability skill, each with a `SKILL.md`), `schemas/evidence.schema.json` (probing-evidence contract), `prompts/` (per-phase implementation prompts), `CONVENTIONS.md`.
 - `schema/custom-platform-script.schema.json` — authoritative platform-script schema.
 - `samples/` — tested production-grade samples (ssh, http, telnet).

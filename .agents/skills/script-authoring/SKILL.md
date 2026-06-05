@@ -29,7 +29,7 @@ Four pattern sub-recipes cover the supported transports:
 - [`http-api`](#http-api)
 - [`http-form-fill`](#http-form-fill)
 
-Telnet/TN3270 is out of scope (`agent-skills-plan.md` §2). The recipes below are starting points; pick one based on [`strategy-selection`](../strategy-selection/SKILL.md) output and adapt it.
+Telnet/TN3270 is out of scope for the agent skill system. The recipes below are starting points; pick one based on [`strategy-selection`](../strategy-selection/SKILL.md) output and adapt it.
 
 ## Modes
 
@@ -62,7 +62,7 @@ A green local schema check proves the JSON parses and conforms to the schema. It
 - `Send` / `Receive` ordering that drifts out of sync with the actual prompt.
 - Status messages emitted in the wrong order or at the wrong phase.
 
-Before declaring a draft "ready to import," cross-reference an analogous sample from `samples-index.md`. If a sample uses a construct your draft does not (e.g., a `Try`/`Catch` around `Disconnect`, a `Receive` flush of the login banner, a `Headers` block before `HttpAuth`), surface that divergence to the operator rather than silently omitting it. The `agent-skills-plan.md` §5 rule is explicit: *"if a sample uses a construct the draft doesn't, surface the divergence."*
+Before declaring a draft "ready to import," cross-reference an analogous sample from `samples-index.md`. If a sample uses a construct your draft does not (e.g., a `Try`/`Catch` around `Disconnect`, a `Receive` flush of the login banner, a `Headers` block before `HttpAuth`), surface that divergence to the operator rather than silently omitting it.
 
 ## Conventions all four patterns share
 

@@ -20,7 +20,7 @@
     },
     "protocol": {
       "type": "string",
-      "description": "Transport protocol of the target. SSH and HTTP only — telnet is out of scope for the agent skill system (see agent-skills-plan.md §2).",
+      "description": "Transport protocol of the target. SSH and HTTP only — telnet is out of scope for the agent skill system.",
       "enum": ["ssh", "http"]
     },
     "target": {
@@ -82,7 +82,7 @@
         },
         "probes": {
           "type": "array",
-          "description": "Ordered record of probes executed. Each entry is a single probe step. Read-only probes record observations; destructive probes additionally record the explicit per-probe consent given by the operator (see probe-safety contract in agent-skills-plan.md §5).",
+          "description": "Ordered record of probes executed. Each entry is a single probe step. Read-only probes record observations; destructive probes additionally record the explicit per-probe consent given by the operator (see the probe-safety contract in target-probing/SKILL.md).",
           "items": {
             "$ref": "#/definitions/probeRecord"
           }
@@ -203,7 +203,7 @@
     },
     "sshFindings": {
       "type": "object",
-      "description": "TODO: SSH-specific finding shapes. Locked down in Phase 3 once the target-probing SSH playbooks are authored against a real target. Fields below are the categories the playbook MUST cover (per agent-skills-plan.md §5); their internal shape is intentionally permissive in v0.",
+      "description": "SSH-specific finding shapes. Fields below are the categories the playbook MUST cover; their internal shape is intentionally permissive in v0 and will be tightened once more SSH targets have been probed.",
       "additionalProperties": false,
       "properties": {
         "shellPrompt": {
@@ -230,7 +230,7 @@
     },
     "httpFindings": {
       "type": "object",
-      "description": "TODO: HTTP-specific finding shapes. Locked down in Phase 3 once the target-probing HTTP playbooks are authored against a real target. Fields below are the categories the playbook MUST cover (per agent-skills-plan.md §5); their internal shape is intentionally permissive in v0.",
+      "description": "HTTP-specific finding shapes. Fields below are the categories the playbook MUST cover; their internal shape is intentionally permissive in v0 and will be tightened once more HTTP targets have been probed.",
       "additionalProperties": false,
       "properties": {
         "authScheme": {

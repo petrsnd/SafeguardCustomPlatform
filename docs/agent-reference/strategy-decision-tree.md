@@ -9,7 +9,7 @@ Backs the `strategy-selection` skill. Maps `(protocol, vendor docs, probe eviden
 - `http-api`
 - `http-form-fill`
 
-Telnet/TN3270 are out of scope for agent skills (see `agent-skills-plan.md` §2). The repository's human-facing telnet material remains under `samples/telnet/` and `docs/`.
+Telnet/TN3270 are out of scope for the agent skill system. The repository's human-facing telnet material remains under `samples/telnet/` and `docs/`.
 
 ## Source documents
 

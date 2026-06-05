@@ -4,7 +4,7 @@
 
 This directory holds machine-first reference material for the agent skill system. It is cited from `AGENTS.md` and from individual `SKILL.md` files under `.agents/skills/`.
 
-Human-facing documentation lives in `docs/concepts/`, `docs/guides/`, `docs/tutorials/`, `docs/reference/`, and `docs/quick-start/` and is not duplicated here. Per `agent-skills-plan.md` §5, agent-only content stays out of human-facing locations.
+Human-facing documentation lives in `docs/concepts/`, `docs/guides/`, `docs/tutorials/`, `docs/reference/`, and `docs/quick-start/` and is not duplicated here. Agent-only content stays out of human-facing locations.
 
 ## Files
 

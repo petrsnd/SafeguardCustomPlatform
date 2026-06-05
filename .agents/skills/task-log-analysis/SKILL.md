@@ -82,9 +82,9 @@ Do not paraphrase the messages; quote them verbatim. The catalog below matches o
 
 ## Failure-pattern catalog
 
-The catalog is [`docs/agent-reference/failure-patterns.md`](../../../docs/agent-reference/failure-patterns.md). Per [`agent-skills-plan.md`](../../../agent-skills-plan.md) §5 and §6 Phase F, it **ships empty**. Rows are added only from real extended task logs captured during the maiden voyage and subsequent runs; rows mined from prose guides or invented from memory are explicitly not acceptable.
+The catalog is [`docs/agent-reference/failure-patterns.md`](../../../docs/agent-reference/failure-patterns.md). It **ships empty by design**. Rows are added only from real extended task logs; rows mined from prose guides or invented from memory are explicitly not acceptable.
 
-When the catalog is empty (Phase 1 state), this skill falls back to the classification flow above and asks the operator for guidance on signatures it has not seen before. When it has rows, this skill matches the extracted signature substring against the `signature` column and surfaces the recommended fix; an exact-or-near match shortens the next iteration to a targeted change.
+When the catalog is empty, this skill falls back to the classification flow above and asks the operator for guidance on signatures it has not seen before. When it has rows, this skill matches the extracted signature substring against the `signature` column and surfaces the recommended fix; an exact-or-near match shortens the next iteration to a targeted change.
 
 If a real failure is observed that the catalog does not cover, the agent **proposes a new row** at the end of the loop — signature, phase, likely cause, recommended fix, first-observed date and target type — and asks the operator to confirm before adding it. Confirmation lives outside this skill (the row is added to `failure-patterns.md` by hand or in a follow-up commit).
 
