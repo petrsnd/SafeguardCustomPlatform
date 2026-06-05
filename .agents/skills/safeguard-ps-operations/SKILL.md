@@ -170,6 +170,10 @@ Endpoint paths and the separator/redaction behavior are documented with applianc
 
 Asset and account create/update cmdlets (`New-SafeguardAsset`, `Edit-SafeguardAsset`, `New-SafeguardAssetAccount`, `Edit-SafeguardAssetAccount`) are out of this skill's mandatory loop — operators usually create those once, by hand, against the test appliance. If the workflow needs them, source their syntax from `Get-Help` at use time and treat create-or-update as **idempotent**: look up first, edit if it exists, create if it does not. Do not re-create on every iteration.
 
+### Discovery setup is a prerequisite, not a cmdlet call
+
+A freshly-onboarded asset will reject `Invoke-SafeguardAssetAccountDiscovery` with error 60392 until an Account Discovery Schedule and Rule are wired to it. The recipe — schedule + rule + asset-attach, plus the `-DiscoveryType` ValidateSet and the `Add-SafeguardAccountDiscoveryRule` param-set trap — is in [`docs/agent-reference/failure-patterns.md`](../../../docs/agent-reference/failure-patterns.md) under *Discovery-trigger errors*. Read it before the first discovery trigger on a new platform; do not wait for 60392 to fire.
+
 ## Always trigger with extended logging
 
 Every trigger cmdlet must pass `-ExtendedLogging`. The `See extended logs: Get-SafeguardTaskLog <GUID>` line that the dev-loop script regex-matches to extract the task ID is **only emitted when `-ExtendedLogging` is set** (see `tools/Invoke-PlatformDevLoop.ps1` lines 178–196 for the extraction logic and lines 282–298 of [`tools/README.md`](../../../tools/README.md) for the appliance-side rationale).
