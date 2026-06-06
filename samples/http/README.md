@@ -11,6 +11,7 @@ Tested custom platform scripts for managing systems over HTTP/REST APIs. These s
 | [forgerock-openam](forgerock-openam/) | ⭐⭐ | ForgeRock AM 7.5 REST API |
 | [okta-discovery](okta-discovery/) | ⭐⭐⭐ | Okta with account discovery and group membership |
 | [onelogin-jit](onelogin-jit/) | ⭐⭐⭐ | OneLogin JIT elevation and account activation |
+| [proxmox-ve-http](proxmox-ve-http/) | ⭐⭐⭐ | Proxmox VE 7.x/8.x REST API (ticket-cookie + CSRF) |
 | [wordpress](wordpress/) | ⭐⭐ | WordPress REST API with Basic Auth |
 
 ## Choosing a Sample
@@ -20,6 +21,7 @@ Tested custom platform scripts for managing systems over HTTP/REST APIs. These s
 - **Need account discovery?** See [okta-discovery](okta-discovery/).
 - **JIT elevation workflow?** Try [onelogin-jit](onelogin-jit/).
 - **Browser-form login (not a REST API)?** See [facebook](facebook/) or [twitter](twitter/).
+- **Cookie-based session auth with CSRF tokens?** See [proxmox-ve-http](proxmox-ve-http/).
 
 ## Related Docs
 
