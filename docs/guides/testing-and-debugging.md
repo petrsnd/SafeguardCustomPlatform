@@ -28,7 +28,7 @@ For the operations you can test, see the [Operations Reference](../reference/ope
 Open PowerShell and connect to the appliance:
 
 ```powershell
-Connect-Safeguard -Appliance <your-appliance> -IdentityProvider local -Username admin
+Connect-Safeguard -Appliance <your-appliance> -Username admin
 ```
 
 If your lab appliance uses a self-signed certificate, add `-Insecure` during development.

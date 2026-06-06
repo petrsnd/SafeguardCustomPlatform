@@ -21,7 +21,6 @@ A Linux host that stores an application password in a text file that can be upda
 
 ## Prerequisites
 
-- SPP version 6.0 or later
 - A Linux host reachable over SSH
 - A service account that can use `sudo` (or another `DelegationPrefix`) to edit the application configuration file
 - The path, filename, and password-line prefix for the target configuration file

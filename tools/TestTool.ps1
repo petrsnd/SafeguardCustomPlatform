@@ -5,7 +5,6 @@
 # Base parameters
 $appliance = "<spp-address>"
 $username = "<spp-user-to-upload-the-script-and-run-the-task>"
-$provider = "<local|etc>"
 
 # Script Upload parameters
 $customPlatformScriptPath = "<path-of-custom-platform-script.json>"
@@ -21,7 +20,7 @@ $demote = $false
 $suspend = $true
 
 if (-not($AccessToken)) {
-    $AccessToken = Connect-Safeguard -Insecure -Appliance $appliance -Username $username -IdentityProvider $provider -NoSessionVariable
+    $AccessToken = Connect-Safeguard -Insecure -Appliance $appliance -Username $username -NoSessionVariable
 }
 
 if ($uploadScript) {

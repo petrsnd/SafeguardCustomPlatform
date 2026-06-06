@@ -20,7 +20,6 @@ ForgeRock AM / OpenAM user accounts in a target realm.
 
 ## Prerequisites
 
-- SPP 6.0 or later
 - ForgeRock AM/OpenAM 7.5 or later recommended; this sample was tested with AM 7.5
 - Network access from SPP to the AM endpoint and realm
 - A service account with permission to authenticate and update users in the target realm

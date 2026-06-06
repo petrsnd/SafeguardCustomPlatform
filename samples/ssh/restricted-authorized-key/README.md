@@ -21,7 +21,6 @@ A Linux host where the Safeguard service account uses a restricted SSH key and p
 
 ## Prerequisites
 
-- SPP version 7.4 or later
 - A Linux host reachable over SSH
 - A restricted service-account key configured in `UserKey`
 - Passwordless `sudo` rights for the exact commands the sample runs, including `/usr/bin/id`, `/usr/bin/cat /etc/shadow`, and `/usr/bin/passwd <user>`
@@ -44,7 +43,6 @@ The connection is opened with `RequestTerminal: false`, and every remote command
 
 ## Limitations
 
-- Requires SPP 7.4 or later because it depends on `ExecuteCommand`
 - Assumes passwordless `sudo`; the sample throws an error if `sudo` prompts for a password
 - Uses fixed Linux command paths and manages only local accounts backed by `/etc/shadow`
 - The restricted key policy must still allow the exact `sudo` commands used by the sample

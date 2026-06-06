@@ -21,7 +21,6 @@ A Linux host where the service account can run the required commands through non
 
 ## Prerequisites
 
-- SPP version 7.4 or later
 - A Linux host reachable over SSH
 - A service account that can run `/usr/bin/cat /etc/shadow` and `/usr/bin/passwd <user>` via `sudo` or the configured `DelegationPrefix`
 - If the delegation command requires a password, the service account password must be available so the sample can retry with `sudo -S`
@@ -45,7 +44,6 @@ The script connects with `RequestTerminal: false` and wraps every remote command
 
 ## Limitations
 
-- Requires SPP 7.4 or later because it depends on `ExecuteCommand`
 - Uses fixed Linux command paths such as `/usr/bin/id`, `/usr/bin/cat`, and `/usr/bin/passwd`
 - Still depends on `/etc/shadow` access, so it manages local Linux accounts only
 - The password-change success check is based on the expected `passwd` output text

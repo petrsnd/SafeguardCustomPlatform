@@ -1,0 +1,306 @@
+{
+  "Id": "ProxmoxVE",
+  "BackEnd": "Scriptable",
+  "Meta": {
+    "Description": "Proxmox VE password rotation via the ticket-cookie REST API (HTTP variant). Manages users in the @pve realm only — @pam-realm users are OS-PAM-backed and require root-on-host (use the SSH variant instead). Service-account model: a privileged @pve user (FuncUserName) rotates the managed @pve user's (AccountUserName) password via PUT /access/password. Two-step token fetch — POST /access/ticket returns a session ticket plus a CSRFPreventionToken; subsequent calls send Cookie: PVEAuthCookie=<ticket> and (on writes) CSRFPreventionToken: <token>. Cross-user password changes additionally require the caller's own password as the confirmation-password form field."
+  },
+  "CheckSystem": {
+    "Parameters": [
+      { "Address": { "Type": "String", "Required": true } },
+      { "Port": { "Type": "Integer", "Required": false, "DefaultValue": 8006 } },
+      { "Timeout": { "Type": "Integer", "Required": false, "DefaultValue": 30 } },
+      { "SkipServerCertValidation": { "Type": "Boolean", "Required": false, "DefaultValue": false } },
+      { "FuncUserName": { "Type": "String", "Required": true } },
+      { "FuncPassword": { "Type": "Secret", "Required": true } }
+    ],
+    "Do": [
+      {
+        "Try": {
+          "Do": [
+            {
+              "Function": {
+                "Name": "AuthenticateClient",
+                "Parameters": [
+                  "%Address%",
+                  "%{Port}%",
+                  "%{Timeout}%",
+                  "%{SkipServerCertValidation}%",
+                  "%FuncUserName%",
+                  "%FuncPassword%"
+                ],
+                "ResultVariable": "AuthenticateClientResult"
+              }
+            },
+            { "NewHttpRequest": { "ObjectName": "SystemRequest" } },
+            {
+              "Headers": {
+                "RequestObjectName": "SystemRequest",
+                "AddHeaders": {
+                  "Accept": "application/json",
+                  "Cookie": "PVEAuthCookie=%Ticket%"
+                }
+              }
+            },
+            {
+              "Request": {
+                "RequestObjectName": "SystemRequest",
+                "ResponseObjectName": "SystemResponse",
+                "Verb": "GET",
+                "Url": "/api2/json/version",
+                "IgnoreServerCertAuthentication": "%{SkipServerCertValidation}%"
+              }
+            },
+            {
+              "Condition": {
+                "If": "SystemResponse.StatusCode == 200",
+                "Then": { "Do": [ { "Return": { "Value": true } } ] },
+                "Else": { "Do": [ { "Throw": { "Value": "CheckSystem failed with HTTP %{SystemResponse.StatusCode}%" } } ] }
+              }
+            }
+          ],
+          "Catch": [ { "Return": { "Value": false } } ]
+        }
+      }
+    ]
+  },
+  "CheckPassword": {
+    "Parameters": [
+      { "Address": { "Type": "String", "Required": true } },
+      { "Port": { "Type": "Integer", "Required": false, "DefaultValue": 8006 } },
+      { "Timeout": { "Type": "Integer", "Required": false, "DefaultValue": 30 } },
+      { "SkipServerCertValidation": { "Type": "Boolean", "Required": false, "DefaultValue": false } },
+      { "FuncUserName": { "Type": "String", "Required": true } },
+      { "FuncPassword": { "Type": "Secret", "Required": true } },
+      { "AccountUserName": { "Type": "String", "Required": true } },
+      { "AccountPassword": { "Type": "Secret", "Required": true } }
+    ],
+    "Do": [
+      {
+        "Try": {
+          "Do": [
+            {
+              "Function": {
+                "Name": "SetBaseAddress",
+                "Parameters": [ "%Address%", "%{Port}%" ],
+                "ResultVariable": "SetBaseAddressResult"
+              }
+            },
+            { "SetFormValue": { "FormObjectName": "CheckPasswordForm", "InputName": "username", "Value": "%AccountUserName%" } },
+            { "SetFormValue": { "FormObjectName": "CheckPasswordForm", "InputName": "password", "Value": "%AccountPassword%", "IsSecret": true } },
+            { "NewHttpRequest": { "ObjectName": "CheckPasswordRequest" } },
+            {
+              "Headers": {
+                "RequestObjectName": "CheckPasswordRequest",
+                "AddHeaders": { "Accept": "application/json" }
+              }
+            },
+            {
+              "Request": {
+                "RequestObjectName": "CheckPasswordRequest",
+                "ResponseObjectName": "CheckPasswordResponse",
+                "Verb": "POST",
+                "Url": "/api2/json/access/ticket",
+                "Content": {
+                  "ContentObjectName": "CheckPasswordForm",
+                  "ContentType": "application/x-www-form-urlencoded"
+                },
+                "IgnoreServerCertAuthentication": "%{SkipServerCertValidation}%"
+              }
+            },
+            {
+              "Condition": {
+                "If": "CheckPasswordResponse.StatusCode == 200",
+                "Then": { "Do": [ { "Return": { "Value": true } } ] },
+                "Else": {
+                  "Do": [
+                    {
+                      "Condition": {
+                        "If": "CheckPasswordResponse.StatusCode == 401",
+                        "Then": { "Do": [ { "Return": { "Value": false } } ] },
+                        "Else": { "Do": [ { "Throw": { "Value": "CheckPassword returned HTTP %{CheckPasswordResponse.StatusCode}%" } } ] }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "Catch": [ { "Return": { "Value": false } } ]
+        }
+      }
+    ]
+  },
+  "ChangePassword": {
+    "Parameters": [
+      { "Address": { "Type": "String", "Required": true } },
+      { "Port": { "Type": "Integer", "Required": false, "DefaultValue": 8006 } },
+      { "Timeout": { "Type": "Integer", "Required": false, "DefaultValue": 30 } },
+      { "SkipServerCertValidation": { "Type": "Boolean", "Required": false, "DefaultValue": false } },
+      { "FuncUserName": { "Type": "String", "Required": true } },
+      { "FuncPassword": { "Type": "Secret", "Required": true } },
+      { "AccountUserName": { "Type": "String", "Required": true } },
+      { "AccountPassword": { "Type": "Secret", "Required": true } },
+      { "NewPassword": { "Type": "Secret", "Required": true } }
+    ],
+    "Do": [
+      {
+        "Try": {
+          "Do": [
+            {
+              "Condition": {
+                "If": "AccountPassword.Equals(NewPassword)",
+                "Then": { "Do": [ { "Return": { "Value": false } } ] }
+              }
+            },
+            {
+              "Function": {
+                "Name": "AuthenticateClient",
+                "Parameters": [
+                  "%Address%",
+                  "%{Port}%",
+                  "%{Timeout}%",
+                  "%{SkipServerCertValidation}%",
+                  "%FuncUserName%",
+                  "%FuncPassword%"
+                ],
+                "ResultVariable": "AuthenticateClientResult"
+              }
+            },
+            { "SetFormValue": { "FormObjectName": "ChangePasswordForm", "InputName": "userid", "Value": "%AccountUserName%" } },
+            { "SetFormValue": { "FormObjectName": "ChangePasswordForm", "InputName": "password", "Value": "%NewPassword%", "IsSecret": true } },
+            { "SetFormValue": { "FormObjectName": "ChangePasswordForm", "InputName": "confirmation-password", "Value": "%FuncPassword%", "IsSecret": true } },
+            { "NewHttpRequest": { "ObjectName": "ChangePasswordRequest" } },
+            {
+              "Headers": {
+                "RequestObjectName": "ChangePasswordRequest",
+                "AddHeaders": {
+                  "Accept": "application/json",
+                  "Cookie": "PVEAuthCookie=%Ticket%",
+                  "CSRFPreventionToken": "%CsrfToken%"
+                }
+              }
+            },
+            {
+              "Request": {
+                "RequestObjectName": "ChangePasswordRequest",
+                "ResponseObjectName": "ChangePasswordResponse",
+                "Verb": "PUT",
+                "Url": "/api2/json/access/password",
+                "Content": {
+                  "ContentObjectName": "ChangePasswordForm",
+                  "ContentType": "application/x-www-form-urlencoded"
+                },
+                "IgnoreServerCertAuthentication": "%{SkipServerCertValidation}%"
+              }
+            },
+            {
+              "Condition": {
+                "If": "ChangePasswordResponse.StatusCode == 200",
+                "Then": { "Do": [ { "Return": { "Value": true } } ] },
+                "Else": { "Do": [ { "Throw": { "Value": "ChangePassword failed with HTTP %{ChangePasswordResponse.StatusCode}%" } } ] }
+              }
+            }
+          ],
+          "Catch": [ { "Throw": { "Value": "%Exception%" } } ]
+        }
+      }
+    ]
+  },
+  "Functions": [
+    {
+      "Name": "SetBaseAddress",
+      "Parameters": [
+        { "Address": { "Type": "String", "Required": true } },
+        { "Port": { "Type": "Integer", "Required": false, "DefaultValue": 8006 } }
+      ],
+      "Do": [
+        { "BaseAddress": { "Address": "https://%Address%:%{Port}%" } },
+        { "Return": { "Value": true } }
+      ]
+    },
+    {
+      "Name": "AuthenticateClient",
+      "Parameters": [
+        { "Address": { "Type": "String", "Required": true } },
+        { "Port": { "Type": "Integer", "Required": false, "DefaultValue": 8006 } },
+        { "Timeout": { "Type": "Integer", "Required": false, "DefaultValue": 30 } },
+        { "SkipServerCertValidation": { "Type": "Boolean", "Required": false, "DefaultValue": false } },
+        { "FuncUserName": { "Type": "String", "Required": true } },
+        { "FuncPassword": { "Type": "Secret", "Required": true } }
+      ],
+      "Do": [
+        {
+          "Function": {
+            "Name": "SetBaseAddress",
+            "Parameters": [ "%Address%", "%{Port}%" ],
+            "ResultVariable": "SetBaseAddressResult"
+          }
+        },
+        { "SetFormValue": { "FormObjectName": "TicketForm", "InputName": "username", "Value": "%FuncUserName%" } },
+        { "SetFormValue": { "FormObjectName": "TicketForm", "InputName": "password", "Value": "%FuncPassword%", "IsSecret": true } },
+        { "NewHttpRequest": { "ObjectName": "TicketRequest" } },
+        {
+          "Headers": {
+            "RequestObjectName": "TicketRequest",
+            "AddHeaders": { "Accept": "application/json" }
+          }
+        },
+        {
+          "Request": {
+            "RequestObjectName": "TicketRequest",
+            "ResponseObjectName": "TicketResponse",
+            "Verb": "POST",
+            "Url": "/api2/json/access/ticket",
+            "Content": {
+              "ContentObjectName": "TicketForm",
+              "ContentType": "application/x-www-form-urlencoded"
+            },
+            "IgnoreServerCertAuthentication": "%{SkipServerCertValidation}%"
+          }
+        },
+        {
+          "Condition": {
+            "If": "TicketResponse.StatusCode == 200",
+            "Then": {
+              "Do": [
+                {
+                  "ExtractJsonObject": {
+                    "JsonObjectName": "TicketResponse",
+                    "Name": "TicketResponseJson",
+                    "ContainsSecret": true
+                  }
+                },
+                {
+                  "Condition": {
+                    "If": "TicketResponseJson.data != null && TicketResponseJson.data.ticket != null && !string.IsNullOrWhiteSpace(TicketResponseJson.data.ticket.ToString())",
+                    "Then": {
+                      "Do": [
+                        {
+                          "SetItem": {
+                            "Name": "Global:Ticket",
+                            "Value": "%{TicketResponseJson.data.ticket.ToString()}%",
+                            "IsSecret": true
+                          }
+                        },
+                        {
+                          "SetItem": {
+                            "Name": "Global:CsrfToken",
+                            "Value": "%{TicketResponseJson.data.CSRFPreventionToken.ToString()}%",
+                            "IsSecret": true
+                          }
+                        },
+                        { "Return": { "Value": true } }
+                      ]
+                    },
+                    "Else": { "Do": [ { "Throw": { "Value": "Ticket response did not include data.ticket." } } ] }
+                  }
+                }
+              ]
+            },
+            "Else": { "Do": [ { "Throw": { "Value": "Service-account authentication failed with HTTP %{TicketResponse.StatusCode}%" } } ] }
+          }
+        }
+      ]
+    }
+  ]
+}

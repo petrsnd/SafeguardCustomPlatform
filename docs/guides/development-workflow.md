@@ -13,10 +13,10 @@ Before you start, make sure you have:
 - The [`safeguard-ps` PowerShell module](https://github.com/OneIdentity/safeguard-ps).
 - A test target system. Never begin development against production assets or credentials.
 
-Most of the examples in this guide assume you connect once at the start of your session. The examples use `-Insecure`, which is common in development environments.
+Most of the examples in this guide assume you connect once at the start of your session. The examples use `-Insecure`, which is common in development environments. Omit `-IdentityProvider` — the appliance discovers the user's identity provider from the username, which works for local, certificate, and external providers (AD, LDAP, OIDC, SAML) alike. Only pass `-IdentityProvider` when you know the specific provider name and need to disambiguate.
 
 ```powershell
-Connect-Safeguard -Appliance "spp.lab.local" -IdentityProvider local -Username "admin" -Insecure
+Connect-Safeguard -Appliance "spp.lab.local" -Username "admin" -Insecure
 ```
 
 ## The Development Lifecycle

@@ -21,7 +21,6 @@ A Linux host where the service account may authenticate as `user@domain`, while 
 
 ## Prerequisites
 
-- SPP version 6.0 or later
 - A Linux host reachable over SSH
 - If you use `FuncUserDomain`, the target must accept SSH logins in `user@domain` form
 - A service account that can use `sudo` (or another `DelegationPrefix`) to read `/etc/shadow` and run `passwd`

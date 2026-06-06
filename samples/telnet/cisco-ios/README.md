@@ -20,7 +20,6 @@ Cisco IOS network devices that expose Telnet and local `username` / `enable` con
 
 ## Prerequisites
 
-- SPP 6.0 or later
 - Telnet access from SPP to the Cisco IOS device on the configured port
 - A service account with permission to enter enable mode and run `configure terminal`
 - Optional `EnablePwd` if the service account does not already land in privileged exec mode

@@ -22,7 +22,6 @@ A generic Linux host with local accounts in `/etc/passwd`, password hashes in `/
 
 ## Prerequisites
 
-- SPP version 6.0 or later
 - A Linux host reachable over SSH
 - A service account with enough privilege to read `/etc/shadow`, inspect `/etc/passwd`, and run the discovery pipeline commands (`grep`, `wc`, `cut`, `tr`, `id`, and `awk`)
 - An account-discovery job in SPP if you want to use `DiscoverAccounts`

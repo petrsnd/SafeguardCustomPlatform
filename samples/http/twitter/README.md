@@ -19,7 +19,6 @@ Twitter/X user accounts accessed through the web interface.
 
 ## Prerequisites
 
-- SPP 6.0 or later
 - Outbound HTTPS access from SPP to `https://twitter.com`
 - The managed account must support direct username/password sign-in without extra verification prompts
 - Managed account username and current password; no separate service account is required
