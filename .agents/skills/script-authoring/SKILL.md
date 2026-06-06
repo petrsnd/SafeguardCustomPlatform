@@ -177,7 +177,7 @@ The script shape is the same regardless of auth scheme: `BaseAddress` → `NewHt
 
 #### Pre-flight: rules every `Request` block must satisfy
 
-These four rules each cost a real iteration on a prior voyage when violated. Check every `Request` block — including token-refresh and login calls inside helper functions — against all four before treating the draft as ready for local schema validation:
+These four rules each cost a real iteration when violated in prior testing. Check every `Request` block — including token-refresh and login calls inside helper functions — against all four before treating the draft as ready for local schema validation:
 
 1. **TLS skip is per-`Request`, not per-platform.** Declare the **reserved parameter** `SkipServerCertValidation` (`Type: Boolean`, `DefaultValue: false`) in every operation's `Parameters` and in any function `Parameters` array that issues a `Request`, then set `"IgnoreServerCertAuthentication": "%{SkipServerCertValidation}%"` on **every** `Request` block. SPP auto-sources the value from the asset's `VerifySslCertificate` flag — no `-CustomScriptParameters` plumbing at onboarding. Missing it on even one block (token refresh is the common miss) re-introduces TLS failure on that call only.
 2. **Form bodies use `SetFormValue` + `Content.ContentObjectName`.** Never `Content.Value`. `Content.Value` is undocumented and the engine re-encodes — `%40` becomes `%2540`, `+` and `=` may be dropped — producing 400 BadRequest from targets that accept the identical body when sent manually. Mirror [`samples/http/twitter/CustomTwitter.json`](../../../samples/http/twitter/CustomTwitter.json) lines 133–148.

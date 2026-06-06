@@ -40,7 +40,7 @@ It is the **only** skill that directly calls `safeguard-ps`. Other skills reques
 
 Every cmdlet, parameter name, and parameter-set described to the operator MUST come from `Get-Help <Cmdlet> -Full` against the **installed** `safeguard-ps` module. Do not paraphrase from memory, vendor docs, or prior conversations.
 
-Before invoking any cmdlet you have not used in the current voyage, the agent runs `Get-Help` itself — do not ask the operator to run it and paste output back:
+Before invoking any cmdlet you have not used in the current session, the agent runs `Get-Help` itself — do not ask the operator to run it and paste output back:
 
 ```powershell
 Get-Help <Cmdlet> -Full | Out-String -Width 200
@@ -50,7 +50,7 @@ Get-Help <Cmdlet> -Full | Out-String -Width 200
 
 If a cmdlet's parameter is a `[switch]` and the value comes from a variable, use the colon form (`-Insecure:$ins`, not `-Insecure $ins`). PowerShell silently swallows the latter on switches and the cmdlet ends up with the parameter's default — usually `$false` — which is rarely what the agent wanted. The value bound to the colon must be a `[bool]`.
 
-Sibling cmdlets are not symmetric. `Test-` and `Invoke-` pairs diverge in parameter names; `New-SafeguardCustomPlatform` accepts `-ScriptFile` directly with no separate `Import-` step; `Get-SafeguardTaskLog` with no arguments returns a flat GUID array and only returns `{Recorded, Level, Event}` records when given `-TaskId <guid>`. Run `Get-Help` on every cmdlet's first use in the voyage, even when a sibling was just used.
+Sibling cmdlets are not symmetric. `Test-` and `Invoke-` pairs diverge in parameter names; `New-SafeguardCustomPlatform` accepts `-ScriptFile` directly with no separate `Import-` step; `Get-SafeguardTaskLog` with no arguments returns a flat GUID array and only returns `{Recorded, Level, Event}` records when given `-TaskId <guid>`. Run `Get-Help` on every cmdlet's first use in the session, even when a sibling was just used.
 
 ## Authentication
 
@@ -110,11 +110,11 @@ Do not pre-ask whether the appliance has a valid certificate. Try secure; the er
 
 ### Persist the session across iterations — serialize the token, never keep a long-running shell
 
-**Login budget = 1 per voyage.** Each `Connect-Safeguard -DeviceCode` (or `-Browser`) costs the operator real time and attention. Connect exactly once.
+**Login budget = 1 per session.** Each `Connect-Safeguard -DeviceCode` (or `-Browser`) costs the operator real time and attention. Connect exactly once.
 
 **Long-running interactive PowerShell sessions are banned in agent flows.** They wedge on PSReadLine prediction, swallow `$ConfirmPreference` prompts, return stale back-buffer through `read_powershell`, and routinely cost a re-login when the agent has to kill them. Do not start a persistent shell to hold `$Global:SafeguardSession`. Do not invoke `Connect-Safeguard` as an async command kept alive across iterations.
 
-The only correct shape is short-lived sync `powershell -Command { ... }` calls. `$Global:SafeguardSession` holds **a short-lived bearer token, not a permanent credential** — valid for the rest of the voyage (typically several hours), safe to serialize to the gitignored per-session state directory, expires on its own.
+The only correct shape is short-lived sync `powershell -Command { ... }` calls. `$Global:SafeguardSession` holds **a short-lived bearer token, not a permanent credential** — valid for the rest of the session (typically several hours), safe to serialize to the gitignored per-session state directory, expires on its own.
 
 **Step 1 — connect once and serialize, in the same process.** The connect call and the serialization step **must run in the same PowerShell process**: `$Global:SafeguardSession` dies with the process that called `Connect-Safeguard`, so a "connect in shell A, serialize in shell B" split silently throws the token away and burns a login.
 
@@ -153,9 +153,9 @@ Two superficially-simpler shortcuts do **not** work. Documented here so the next
 
 If a future cmdlet is found that **only** reads the session variable and refuses `-AccessToken`, the correct response is to file a defect against safeguard-ps to add the parameter set — not to spin up a long-running shell to host the cmdlet.
 
-Treat `sg-session.json` like any other secret: write it only under the per-session state directory, never commit it, never paste it into chat or task-log output. Delete it at the end of the voyage. The bearer token redacts itself naturally on expiry; a stale file cannot be used to attack the appliance later. Never log `$Global:SafeguardSession`, the access token, or any password parameter to operator-visible output.
+Treat `sg-session.json` like any other secret: write it only under the per-session state directory, never commit it, never paste it into chat or task-log output. Delete it at the end of the session. The bearer token redacts itself naturally on expiry; a stale file cannot be used to attack the appliance later. Never log `$Global:SafeguardSession`, the access token, or any password parameter to operator-visible output.
 
-If the agent finds itself about to call `Connect-Safeguard` a second time in the same voyage, **stop**. The token in `sg-session.json` is still good unless the operator rebooted the appliance or several hours have passed; re-read it. A second login is a defect, not a workaround.
+If the agent finds itself about to call `Connect-Safeguard` a second time in the same session, **stop**. The token in `sg-session.json` is still good unless the operator rebooted the appliance or several hours have passed; re-read it. A second login is a defect, not a workaround.
 
 This pattern is verified in [`tools/README.md`](../../../tools/README.md) ("Authentication" section). `tools/Invoke-PlatformDevLoop.ps1` itself does not call `Connect-Safeguard`; the operator connects once and the wrapper picks up `$Global:SafeguardSession` (when invoked from a session that has it cached) or `-AccessToken` plumbed through.
 

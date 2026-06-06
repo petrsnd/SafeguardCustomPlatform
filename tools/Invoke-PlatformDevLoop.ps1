@@ -5,7 +5,7 @@ Run the custom-platform dev loop: validate -> import -> trigger -> fetch task lo
 .DESCRIPTION
 Wraps the agent-facing iterative loop into a single call that emits a single
 structured JSON document on stdout and exits with a phase-indexed exit code.
-Designed to be called by the safeguard-ps-operations agent skill (Phase 3) and
+Designed to be called by the safeguard-ps-operations agent skill and
 by humans during day-to-day authoring.
 
 Four modes, selected by mutually-exclusive switches:

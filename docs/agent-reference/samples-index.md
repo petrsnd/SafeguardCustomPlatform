@@ -15,7 +15,7 @@ CI runs the same script with `-CheckOnly` and fails the build if the committed c
 - **protocol** — derived from the directory (`samples/ssh/`, `samples/http/`) or the template filename (`Pattern-GenericLinux*` / `Pattern-WindowsSsh*` / `TemplateSsh*` → ssh; `Pattern-GenericHttp*` / `Pattern-GenericRestApi*` / `TemplateHttp*` → http).
 - **auth-scheme** — best-effort from JSON content. HTTP: from `HttpAuth.Type`, an `Authorization: Bearer` header, an API-key-shaped custom header, or `ExtractFormData`. SSH: `Interactive` (Send/Receive), `Batch` (ExecuteCommand), or `Mixed`. Blank when undetermined.
 - **operations** — intersection of top-level keys with the canonical operation list from `schema/custom-platform-script.schema.json`. Imports and user-defined functions never appear here.
-- **OS-family** — intentionally blank. Phase 1 prefers blank over guessed values; revisit in a later phase if needed.
+- **OS-family** — intentionally blank. The build script prefers blank over guessed values; revisit once a reliable detection heuristic exists.
 - **file-path** and **README** — filesystem facts. `—` means the field could not be determined.
 - `samples/telnet/` is excluded — telnet is out of scope for the agent skill system. The samples remain in the repo for human reference.
 

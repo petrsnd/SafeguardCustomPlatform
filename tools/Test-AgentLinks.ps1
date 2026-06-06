@@ -18,7 +18,7 @@
       - Paths are resolved relative to the markdown file that contains
         the link.
       - In-page anchors (links starting with '#') are skipped — anchor
-        validity is not in scope for Phase 1.
+        validity is not currently in scope.
 
     The script exits 0 on success, 1 on any broken link.
 
