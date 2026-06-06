@@ -20,9 +20,10 @@ Proxmox VE 7.x and 8.x clusters or single nodes, managed via the REST API on por
 
 ## Prerequisites
 
-- SPP 6.0 or later
 - A Proxmox VE node reachable from SPP on port 8006 (or whatever port the asset specifies)
-- A **service account in the `@pve` realm** with the `Realm.AllocateUser` privilege on `/access/realm/pve` (the built-in `PVEUserAdmin` role grants this). The standard `User.Modify` privilege alone is **not** sufficient for cross-user password changes via the API.
+- A service account in the `@pve` realm:
+  - For **service-account mode** (one account rotating another): the service account needs `Realm.AllocateUser` on `/access/realm/pve` — the built-in `PVEUserAdmin` role grants this. The standard `User.Modify` privilege alone is **not** sufficient for cross-user password changes via the API.
+  - For **self-managed mode** (the account rotates its own password): no special privilege is required — Proxmox always allows users to change their own password.
 - Managed user accounts must also live in the `@pve` realm.
 
 ## Deployment
@@ -67,8 +68,8 @@ No custom parameters. The full credential set comes from reserved parameters aut
 ## Limitations
 
 - **`@pve` realm only.** Users in `@pam` (the host's OS PAM stack) cannot be rotated via the Proxmox API regardless of API-level privileges — the Proxmox API call returns an error directing the caller to use `passwd` on the host. Rotating `@pam` users requires SSH-to-the-host + `sudo passwd <user>`, which is a separate platform (not yet shipped).
-- **Service-account model only.** This sample does not support self-rotation — `ChangePassword` always operates cross-user and depends on the service account holding `Realm.AllocateUser`. Configuring the asset for self-managed rotation will fail at the API call.
-- **Ticket lifetime is ~2 hours.** Each operation fetches a fresh ticket; the script does not persist tickets across SPP operations.
+- **Both self-managed and service-account modes are voyage-tested.** In service-account mode a privileged user (e.g. holding `PVEUserAdmin` on `/access/realm/pve`) rotates another `@pve` user's password. In self-managed mode the account rotates its own password; Proxmox always allows users to change their own password, so the `Realm.AllocateUser` privilege requirement does not apply. The same script handles both — SPP supplies the credentials such that `%FuncUserName%`/`%FuncPassword%` and `%AccountUserName%`/`%AccountPassword%` resolve to the same identity in self-managed mode, and the API accepts the `confirmation-password` field as benign on a same-user change.
+- **Ticket lifetime is ~2 hours.** Each operation fetches a fresh ticket; the script does not persist tickets across SPP operations. Self-rotation invalidates the ticket held during the change, but since the next operation re-authenticates, this is not observable.
 - **`401 Unauthorized` responses do not carry `WWW-Authenticate`.** Proxmox does not advertise the auth scheme on failure, which means generic HTTP debugging tools may misclassify the failure mode. The script does not rely on the header.
 - **No support for `DiscoverAccounts`.** The script does not enumerate Proxmox users; the operator adds managed accounts explicitly.
 - **No API token support.** Proxmox also offers token-based auth (`Authorization: PVEAPIToken=user@realm!tokenid=UUID`). That is a different sample and not implemented here.

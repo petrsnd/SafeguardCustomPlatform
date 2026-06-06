@@ -21,7 +21,6 @@ A generic Linux host with local accounts in `/etc/passwd` and password hashes in
 
 ## Prerequisites
 
-- SPP version 6.0 or later
 - A Linux host reachable over SSH
 - A service account that can log in over SSH and use `sudo` (or another `DelegationPrefix`) to read `/etc/shadow` and run `passwd`
 - If `sudo` prompts for a password, the service account password must be supplied; optional SSH key login is supported through `UserKey`

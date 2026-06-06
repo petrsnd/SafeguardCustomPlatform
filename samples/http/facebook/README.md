@@ -19,7 +19,6 @@ Facebook user accounts accessed through the public web interface.
 
 ## Prerequisites
 
-- SPP 6.0 or later
 - Outbound HTTPS access from SPP to `https://www.facebook.com`
 - The managed account must use password-based sign-in only; checkpoint, login approvals, MFA prompts, or CAPTCHA must be disabled
 - Managed account username/email and current password; no separate service account is required

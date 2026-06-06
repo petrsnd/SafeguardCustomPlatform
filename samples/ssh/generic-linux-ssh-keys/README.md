@@ -24,7 +24,6 @@ A Linux or Unix host that uses OpenSSH-style `AuthorizedKeysFile` paths for mana
 
 ## Prerequisites
 
-- SPP version 6.0 or later
 - A Linux/OpenSSH host reachable over SSH
 - A service account that can run `sshd -T -C`, `id`, and the required file-management commands (`mkdir`, `touch`, `cp`, `cat`, `tee`, `mv`, `chown`, `chmod`) through `sudo` or the configured `DelegationPrefix`
 - Managed accounts that store SSH keys in standard OpenSSH authorized-keys files

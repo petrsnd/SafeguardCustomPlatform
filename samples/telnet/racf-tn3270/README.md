@@ -20,7 +20,6 @@ IBM z/OS RACF user IDs exposed through a TN3270 / TSO logon session.
 
 ## Prerequisites
 
-- SPP 6.0 or later
 - Network access from SPP to the TN3270 endpoint, typically on port `23` or another site-specific port
 - A RACF function account authorized for TSO logon and for the `ALU` command used to update user passwords
 - Managed accounts that map to RACF user IDs; optional `WorkstationId` if your host requires a specific terminal identifier

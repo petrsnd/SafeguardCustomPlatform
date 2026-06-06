@@ -23,7 +23,6 @@ Okta users and group memberships in an Okta tenant.
 
 ## Prerequisites
 
-- SPP 6.0 or later
 - Network access from SPP to the Okta tenant URL configured in `Address`
 - An Okta API token with rights to read users and groups, change passwords, and add/remove users from groups
 - `FuncUsername` must be the login name of an existing Okta user for `CheckSystem`; `FuncPassword` is the Okta API token used as the `SSWS` authorization value

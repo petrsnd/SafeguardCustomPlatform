@@ -20,7 +20,6 @@ WordPress user accounts exposed through the WordPress REST API.
 
 ## Prerequisites
 
-- SPP 6.0 or later
 - A WordPress site reachable from SPP with the REST API enabled
 - The JSON Basic Authentication plugin (or equivalent Basic-auth support) installed on the site
 - A service account with permission to read settings and update WordPress users; use HTTPS because Basic auth sends credentials on every request

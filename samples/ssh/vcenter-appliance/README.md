@@ -22,7 +22,6 @@ A VMware vCenter Server Appliance (VCSA) with SSH and shell access enabled.
 
 ## Prerequisites
 
-- SPP version 6.0 or later
 - A vCenter Server Appliance reachable over SSH with appliance shell access enabled
 - A Safeguard service account configured per the sample's assumption that `root` and `Administrator@vsphere.local` share the same password
 - Permission to run `/usr/lib/vmware-vmafd/bin/dir-cli` and the appliance password update commands from the SSH session

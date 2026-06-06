@@ -23,7 +23,6 @@ OneLogin users and role assignments used in Safeguard JIT access workflows.
 
 ## Prerequisites
 
-- SPP 6.0 or later
 - Network access from SPP to the OneLogin API endpoint in `Address`
 - A separate OneLogin Generic REST connector already managing the base asset, account, and entitlement inventory
 - OneLogin OAuth client credentials with rights to manage users and roles; configure the client ID as `FuncUsername` and the client secret as `FuncPassword`
