@@ -106,6 +106,8 @@ Connect-Safeguard -Appliance <host> -Insecure -DeviceCode
 
 Do not pre-ask whether the appliance has a valid certificate. Try secure; the error message tells both the operator and the agent unambiguously when `-Insecure` is needed.
 
+**Omit `-IdentityProvider` by default.** `Connect-Safeguard` with no `-IdentityProvider` lets the appliance discover the user's provider from their username at PKCE time, which works for local, certificate, and every external provider (AD, LDAP, OIDC, SAML) the appliance has configured. Hardcoding `-IdentityProvider local` breaks login for any user not in the local IdP, which is the common case in production. Pass `-IdentityProvider` only when the operator has explicitly named the provider, or when a prior login failed with a provider-mismatch error.
+
 ### Persist the session across iterations — serialize the token, never keep a long-running shell
 
 **Login budget = 1 per voyage.** Each `Connect-Safeguard -DeviceCode` (or `-Browser`) costs the operator real time and attention. Connect exactly once.
@@ -114,14 +116,20 @@ Do not pre-ask whether the appliance has a valid certificate. Try secure; the er
 
 The only correct shape is short-lived sync `powershell -Command { ... }` calls. `$Global:SafeguardSession` holds **a short-lived bearer token, not a permanent credential** — valid for the rest of the voyage (typically several hours), safe to serialize to the gitignored per-session state directory, expires on its own.
 
-**Step 1 — connect once and serialize.** Sync call; the shell exits when `Connect-Safeguard` returns (no `-NoExit`, no async):
+**Step 1 — connect once and serialize, in the same process.** The connect call and the serialization step **must run in the same PowerShell process**: `$Global:SafeguardSession` dies with the process that called `Connect-Safeguard`, so a "connect in shell A, serialize in shell B" split silently throws the token away and burns a login.
+
+Do **not** pipe the cmdlet to `Out-Null` — the verification URL and short code are printed on its host stream as it waits for the device-code callback, and `Out-Null` (or any output redirection that suppresses host writes) hides them from the operator. The cmdlet's return value is the session object, which the agent does not need because `$Global:SafeguardSession` is the durable artifact; just let stdout pass through.
+
+In an agent runtime where sync stdout buffers until a cmdlet returns (and so hides the device-code block until after it has expired), run the connect + serialize sequence as one short-lived async invocation and read its stream as the device-code block lands. The operator-surfacing rule still applies: the agent must echo the URL, the code, and the 300-second expiry to the operator the moment they appear.
 
 ```
-Connect-Safeguard -Appliance <host> -Insecure -DeviceCode | Out-Null
+Connect-Safeguard -Appliance <host> -Insecure -DeviceCode
 $Global:SafeguardSession |
   ConvertTo-Json -Depth 5 |
   Set-Content "$env:USERPROFILE\.copilot\session-state\<id>\files\sg-session.json" -Encoding utf8
 ```
+
+If `Connect-Safeguard` is called on its own without the serialize step in the same process, the token is lost and the next cmdlet call will prompt for `-Appliance`, hanging the agent and forcing a second login. That is a defect (see "Why explicit threading…" below), not a recoverable state.
 
 **Step 2 — every subsequent cmdlet is its own fresh sync call.** Re-hydrate the saved session, normalize `Insecure` to a `[bool]` once, then thread `Appliance`, `AccessToken`, and the bool through every call:
 
