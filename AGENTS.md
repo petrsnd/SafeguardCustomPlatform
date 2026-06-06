@@ -71,7 +71,7 @@ The agent-facing index of every sample and template lives at [`docs/agent-refere
 Use this workflow when the operator's request is to build a custom platform that does not yet exist in the appliance.
 
 1. **Gather requirements.** Classify intent (new vs enhance — this workflow is *new*), then collect what is missing:
-   - **Platform display name** the operator wants the new platform to use on the appliance (e.g., `My Custom Linux`).
+   - **Platform display name** the operator wants the new platform to use on the appliance (e.g., `My Custom Linux`). **Required pre-condition: do not hand off to `strategy-selection` or draft any JSON until the operator has supplied this verbatim.** If unspecified, ask before proceeding — never invent a name from the protocol, vendor, or strategy choice. Renaming a platform mid-voyage costs a re-import.
    - Target system (vendor, product, version) and protocol (SSH or HTTP — telnet is out of scope).
    - Operations needed (`CheckSystem`, `CheckPassword`, `ChangePassword`, optionally `DiscoverAccounts`).
    - **Credential intent** — self-managed (the managed account rotates its own password) vs service-account (a separate account rotates the managed one).

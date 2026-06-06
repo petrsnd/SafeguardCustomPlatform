@@ -175,6 +175,17 @@ Any `Try`/`Catch` whose `Catch` produces a verdict (rather than re-raising) **mu
 
 The script shape is the same regardless of auth scheme: `BaseAddress` → `NewHttpRequest` → (auth setup) → `Request` → `ExtractJsonObject` → `Status`. What varies is two orthogonal choices the recipe makes you spell out: **auth shape** and **one-step vs two-step**.
 
+#### Pre-flight: rules every `Request` block must satisfy
+
+These four rules each cost a real iteration on a prior voyage when violated. Check every `Request` block — including token-refresh and login calls inside helper functions — against all four before treating the draft as ready for local schema validation:
+
+1. **TLS skip is per-`Request`, not per-platform.** Declare the **reserved parameter** `SkipServerCertValidation` (`Type: Boolean`, `DefaultValue: false`) in every operation's `Parameters` and in any function `Parameters` array that issues a `Request`, then set `"IgnoreServerCertAuthentication": "%{SkipServerCertValidation}%"` on **every** `Request` block. SPP auto-sources the value from the asset's `VerifySslCertificate` flag — no `-CustomScriptParameters` plumbing at onboarding. Missing it on even one block (token refresh is the common miss) re-introduces TLS failure on that call only.
+2. **Form bodies use `SetFormValue` + `Content.ContentObjectName`.** Never `Content.Value`. `Content.Value` is undocumented and the engine re-encodes — `%40` becomes `%2540`, `+` and `=` may be dropped — producing 400 BadRequest from targets that accept the identical body when sent manually. Mirror [`samples/http/twitter/CustomTwitter.json`](../../../samples/http/twitter/CustomTwitter.json) lines 133–148.
+3. **URL path encoding uses the `UrlEncode` command + `SetItem`, never bare `Uri.EscapeDataString(...)` inside `%{...}%`.** The script-engine expression evaluator does not bind base class library types by bare name; `Uri.EscapeDataString(x)` parses as `<var Uri>.Method(x)` and fails `Test-SafeguardCustomPlatformScript` with `the variable "Uri" is used at path "...SetItem.Value" but it is not declared in that scope`. [`templates/Pattern-GenericRestApiBearerToken.json`](../../../templates/Pattern-GenericRestApiBearerToken.json) currently violates this at three call sites — do not copy from it without rewriting.
+4. **Reserved parameter names beat invented ones.** Before declaring any custom Boolean/string parameter, grep [`docs/reference/reserved-parameters.md`](../../../docs/reference/reserved-parameters.md) for the concept. `SkipServerCertValidation`, `UseSsl`, `CheckHostKey`, `HostKey`, `HttpProxyUri`/`Port`/`UserName`/`Password`, `TacacsSecret` and several others are auto-sourced from asset settings — declaring an invented name forces the operator to remember `-CustomScriptParameters` forever.
+
+Each rule has an entry in [`docs/agent-reference/failure-patterns.md`](../../../docs/agent-reference/failure-patterns.md) with full symptom text.
+
 #### Auth shape — pick a bucket, then a specific scheme
 
 The first decision is *who handles the auth dance*:
@@ -207,7 +218,7 @@ Closest production sample for Basic: [`samples/http/wordpress/WordPressHttp.json
 
 Swap `Authorization: Bearer <token>` for whatever the vendor actually uses. Two common variants:
 
-- **Bearer or custom `Authorization` scheme** (`Authorization: Bearer <token>`, `Authorization: PVEAPIToken=user@realm!tokenid=UUID`, `Authorization: Token …`). Closest production sample: [`samples/http/onelogin-jit/OneLogin_GRC_JIT_addon.json`](../../../samples/http/onelogin-jit/OneLogin_GRC_JIT_addon.json) (Bearer header at lines 1228, 1361, 1510, 1672, 1834, 2002, 2135). Starter template: [`templates/Pattern-GenericRestApiBearerToken.json`](../../../templates/Pattern-GenericRestApiBearerToken.json).
+- **Bearer or custom `Authorization` scheme** (`Authorization: Bearer <token>`, `Authorization: PVEAPIToken=user@realm!tokenid=UUID`, `Authorization: Token …`). Closest production sample: [`samples/http/onelogin-jit/OneLogin_GRC_JIT_addon.json`](../../../samples/http/onelogin-jit/OneLogin_GRC_JIT_addon.json) (Bearer header at lines 1228, 1361, 1510, 1672, 1834, 2002, 2135). Starter template: [`templates/Pattern-GenericRestApiBearerToken.json`](../../../templates/Pattern-GenericRestApiBearerToken.json) — **caveat: this template uses `Uri.EscapeDataString(...)` at lines 371, 528, 676 and fails server validation as-is. Rewrite those call sites per pre-flight rule 3 before importing.**
 - **Custom-header API key** (`X-API-Key: %ApiKey%`, `X-Vault-Token: %Token%`, `X-Auth-Token: …`). See lines 184–190 of [`templates/Pattern-GenericRestApiKeyRotation.json`](../../../templates/Pattern-GenericRestApiKeyRotation.json). That template also covers the `CheckApiKey` / `ChangeApiKey` operation pair for when the script must rotate the key itself; pair with [`docs/guides/api-key-management.md`](../../../docs/guides/api-key-management.md).
 
 Whichever bucket you're in, declare the credential as `Type: "Secret"` in `Parameters` so SPP redacts it in task logs.
