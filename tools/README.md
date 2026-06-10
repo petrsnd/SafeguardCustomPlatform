@@ -7,7 +7,7 @@ Tooling for the SafeguardCustomPlatform repo.
 | `TestTool.ps1` | Original human-facing upload + trigger script. Edit-in-place script with hard-coded variables. | Humans |
 | `Build-SamplesIndex.ps1` | Regenerates `docs/agent-reference/samples-index.md` from `samples/` and `templates/`. | CI + agents |
 | `Test-AgentLinks.ps1` | Validates relative links in `AGENTS.md` and `.agents/skills/*/SKILL.md` against `docs/agent-reference/`. | CI |
-| `Invoke-PlatformDevLoop.ps1` | Structured dev-loop wrapper: validate → import → trigger → fetch task log. JSON output, phase-indexed exit codes. | Agents (Phase 3 `safeguard-ps-operations` skill) and humans |
+| `Invoke-PlatformDevLoop.ps1` | Structured dev-loop wrapper: validate → import → trigger → fetch task log. JSON output, phase-indexed exit codes. | Agents (the `safeguard-ps-operations` skill) and humans |
 
 The remainder of this document covers `Invoke-PlatformDevLoop.ps1`.
 

@@ -136,7 +136,7 @@
   "definitions": {
     "probeRecord": {
       "type": "object",
-      "description": "A single probe step. Field shapes for 'observation' and 'destructiveDetails' are placeholders pending a real probing run; populated structures land in Phase 3 / Phase 5.",
+      "description": "A single probe step. Field shapes for 'observation' and 'destructiveDetails' are placeholders pending a real probing run; populated structures will land once the SSH and HTTP playbooks are authored against real targets.",
       "required": ["id", "kind", "command", "result"],
       "additionalProperties": false,
       "properties": {
@@ -191,7 +191,7 @@
           "enum": ["ok", "failed", "skipped", "halted"]
         },
         "observation": {
-          "description": "TODO: structured observation payload. Shape locked down in Phase 3 once the SSH and HTTP playbooks are authored against real targets. Free-form for now.",
+          "description": "TODO: structured observation payload. Shape will be locked down once the SSH and HTTP playbooks are authored against real targets. Free-form for now.",
           "type": "object",
           "additionalProperties": true
         },
