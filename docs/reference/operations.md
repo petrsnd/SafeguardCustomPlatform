@@ -19,7 +19,6 @@ This page documents the operations available for custom platform scripts.
 | [SSH Keys](#changesshkey) | `ChangeSshKey` | Managed account (+ service account) | `SshKeyFeatureFl` |
 | [SSH Keys](#discoversshhostkey) | `DiscoverSshHostKey` | None (asset-level) | `SshTransportFl` |
 | [SSH Keys](#retrievesshhostkey) | `RetrieveSshHostKey` | None (asset-level) | — |
-
 | [SSH Keys](#discoverauthorizedkeys) | `DiscoverAuthorizedKeys` | Managed account (+ service account) | `SshKeyFeatureFl` |
 | [SSH Keys](#removeauthorizedkey) | `RemoveAuthorizedKey` | Managed account (+ service account) | — |
 | [Discovery](#discoveraccounts) | `DiscoverAccounts` | Service account | `AccountDiscoveryFl` |
