@@ -12,6 +12,7 @@ Tested custom platform scripts for managing systems over SSH. These samples cove
 | [generic-linux-ssh-keys](generic-linux-ssh-keys/) | ⭐⭐⭐ | Linux with SSH authorized key lifecycle |
 | [linux-app-text-config](linux-app-text-config/) | ⭐⭐⭐ | Application passwords in text config files |
 | [linux-ssh-batch-mode](linux-ssh-batch-mode/) | ⭐⭐ | Linux using batch-mode SSH (no interactive shell) |
+| [openwrt](openwrt/) | ⭐⭐⭐ | OpenWrt (dropbear/BusyBox) password + SSH key lifecycle |
 | [restricted-authorized-key](restricted-authorized-key/) | ⭐⭐⭐ | Linux with restricted key + passwordless sudo |
 | [vcenter-appliance](vcenter-appliance/) | ⭐⭐⭐ | VMware vCenter Server Appliance |
 
@@ -20,6 +21,7 @@ Tested custom platform scripts for managing systems over SSH. These samples cove
 - **New to SSH platforms?** Start with [generic-linux](generic-linux/) — it's the baseline.
 - **Need account discovery?** Look at [generic-linux-with-discovery](generic-linux-with-discovery/).
 - **Managing SSH keys?** See [generic-linux-ssh-keys](generic-linux-ssh-keys/).
+- **Managing an OpenWrt router?** See [openwrt](openwrt/) — dropbear/BusyBox quirks handled.
 - **Prefer batch commands over interactive shells?** Try [linux-ssh-batch-mode](linux-ssh-batch-mode/).
 
 ## Related Docs
