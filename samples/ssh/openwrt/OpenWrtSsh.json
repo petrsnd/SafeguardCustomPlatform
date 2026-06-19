@@ -520,8 +520,14 @@
          "ResultVariable" : "AccountGid"
        } },
 
-       { "Comment" : { "Text" : "OpenWrt/dropbear has no sshd binary to query; the root authorized_keys file is fixed at /etc/dropbear/authorized_keys" }},
+       { "Comment" : { "Text" : "OpenWrt/dropbear has no sshd binary to query. root's keys live in the fixed /etc/dropbear/authorized_keys; non-root accounts use the standard ~/.ssh/authorized_keys (%h is expanded to the home dir by ResolveKeyTemplates)" }},
        { "Eval" : { "Expression" : "KeyTemplateLine = \"/etc/dropbear/authorized_keys\"" }},
+       { "Condition": {
+         "If": "AccountUid != \"0\"",
+         "Then" : { "Do" : [
+           { "Eval" : { "Expression" : "KeyTemplateLine = \"%h/.ssh/authorized_keys\"" }}
+         ]}
+       }},
 
        { "Function" : { "Name" : "GetValueFromOutput",
           "Parameters" : [ "echo \"home=\"`grep '^%AccountUserName%:' /etc/passwd | cut -d ':' -f 6`", "(?m)(?<=\\bhome=)\\S+", true ],

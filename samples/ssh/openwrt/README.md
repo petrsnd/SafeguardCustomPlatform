@@ -14,7 +14,8 @@ password check/change and the full SSH authorized-key lifecycle for the managed 
 
 An OpenWrt host (tested against OpenWrt 25.12.x) reachable over SSH with `root` login enabled
 (`config dropbear` option `RootPasswordAuth 'on'`). The managed account is typically `root`,
-which on OpenWrt is the single privileged local account.
+the single privileged local account, but non-root local accounts are also supported for SSH-key
+operations (their keys resolve to `~/.ssh/authorized_keys`).
 
 ## Operations Implemented
 
@@ -23,9 +24,9 @@ which on OpenWrt is the single privileged local account.
 | `CheckSystem` | Verifies the service account can log in and read `/etc/shadow`. |
 | `CheckPassword` | Validates a managed-account password against its `/etc/shadow` hash. |
 | `ChangePassword` | Changes the managed-account password with BusyBox interactive `passwd`. |
-| `CheckSshKey` | Reports whether `OldSshKey` is installed in the dropbear authorized-keys store. |
+| `CheckSshKey` | Reports whether `OldSshKey` is installed in the account's authorized-keys file. |
 | `ChangeSshKey` | Installs `NewSshKey`, optionally tests `NewSshPrivateKey`, then removes `OldSshKey`. |
-| `DiscoverAuthorizedKeys` | Reads the dropbear authorized-keys file and emits discovered SSH keys. |
+| `DiscoverAuthorizedKeys` | Reads the account's authorized-keys file and emits discovered SSH keys. |
 | `DiscoverSshHostKey` | Retrieves the SSH host key for the target asset. |
 
 ## OpenWrt / BusyBox differences from the generic Linux samples
@@ -40,17 +41,21 @@ following adaptations:
 - **BusyBox `passwd` prompts.** Running `passwd` as `root` prompts `New password:` then
   `Retype password:` (not `Retype new password:`) and never asks for the current password.
   The `ChangeUserPassword` send/receive sequence matches these prompts.
-- **dropbear authorized-keys path.** Keys live in `/etc/dropbear/authorized_keys` (file mode
-  `600`, directory mode `700`), not `~/.ssh/authorized_keys`. `DiscoverSshKeyConfiguration`
-  hardcodes this path instead of probing `sshd -T -C`, which dropbear does not provide.
+- **dropbear authorized-keys path.** dropbear has no `sshd -T -C` to probe, so
+  `DiscoverSshKeyConfiguration` selects the path by account: `root` (uid 0) uses
+  `/etc/dropbear/authorized_keys` (file mode `600`, directory mode `700`); any other account
+  uses the standard `~/.ssh/authorized_keys`, resolved from `%h` against the account's home
+  directory just like the OpenSSH base sample.
 - **`grep -E`** is used in place of GNU `egrep`, and `stty` is not present on BusyBox (the
   shell-init `stty -echo` is best-effort and its absence is harmless).
 
 ## Prerequisites
 
 - An OpenWrt host reachable over SSH with root password authentication enabled
-- A service account (`root`) that can read `/etc/shadow` and write `/etc/dropbear/authorized_keys`
-- For key operations: managed accounts whose keys are stored in `/etc/dropbear/authorized_keys`
+- A service account (`root`) that can read `/etc/shadow` and write each managed account's
+  authorized-keys file
+- For key operations: `root` keys live in `/etc/dropbear/authorized_keys`; non-root accounts
+  use `~/.ssh/authorized_keys`
 
 ## Deployment
 
@@ -70,8 +75,9 @@ following adaptations:
 
 ## Limitations
 
-- Targets the dropbear authorized-keys store (`/etc/dropbear/authorized_keys`) only; does not
-  support OpenSSH `AuthorizedKeysFile` template resolution
+- Resolves `root` keys to `/etc/dropbear/authorized_keys` and non-root keys to
+  `~/.ssh/authorized_keys`; does not parse OpenSSH `AuthorizedKeysFile` directives from a config
+  file (dropbear exposes none)
 - Does not implement a standalone `RemoveAuthorizedKey` operation
 - Key parsing is limited to the key types handled in `ParseKey`
 - Assumes the managed account can read `/etc/shadow` directly (root, no delegation)
